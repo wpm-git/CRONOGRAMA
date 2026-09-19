@@ -22,5 +22,20 @@ BACKUP
 Na aba Configurações, use "Exportar backup" para salvar os dados em JSON.
 Para recuperar os dados, clique em "Importar backup" e selecione o arquivo JSON.
 
+DATA, HORA E LOCALIZAÇÃO
+O cabeçalho mostra a data, a hora atualizada a cada segundo e o dia da semana.
+Na primeira abertura, permita o acesso à localização quando o navegador solicitar.
+A localização é convertida em cidade e estado por uma consulta online ao serviço de mapas OpenStreetMap.
+Se a consulta estiver indisponível, o sistema mostra a última cidade identificada ou as coordenadas.
+
+EXCLUSÃO DE REGISTROS
+O menu de três pontos possui a opção "Excluir". O sistema solicita confirmação antes
+de apagar permanentemente a tarefa e todo o seu histórico.
+
 IMPORTANTE
 Os dados ficam armazenados no navegador e no computador utilizado. Faça backups periódicos.
+
+IDENTIDADE VISUAL
+A interface utiliza preto Cadillac como cor predominante, acabamento dourado e cores
+funcionais discretas: verde para ações positivas, vermelho para exclusão e vencimentos,
+e âmbar para prazos próximos e avisos.
