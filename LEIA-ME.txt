@@ -39,3 +39,8 @@ IDENTIDADE VISUAL
 A interface utiliza preto Cadillac como cor predominante, acabamento dourado e cores
 funcionais discretas: verde para ações positivas, vermelho para exclusão e vencimentos,
 e âmbar para prazos próximos e avisos.
+
+CALENDÁRIO
+A aba Calendário mostra o mês atual e marca os dias com vencimentos pendentes.
+"A" identifica uma anotação comum e "IP" identifica uma anotação com IP.
+Clique na marcação para visualizar os detalhes e o histórico do registro.
