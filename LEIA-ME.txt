@@ -44,3 +44,12 @@ CALENDÁRIO
 A aba Calendário mostra o mês atual e marca os dias com vencimentos pendentes.
 "A" identifica uma anotação comum e "IP" identifica uma anotação com IP.
 Clique na marcação para visualizar os detalhes e o histórico do registro.
+Use as setas para navegar entre os meses e "Mês atual" para retornar ao mês de hoje.
+
+RECURSOS ADICIONAIS
+- Editar tarefas pelo menu de três pontos;
+- definir prioridade Normal, Importante ou Urgente;
+- informar uma referência, número de processo, pasta ou link;
+- clicar nos cartões de resumo para abrir a lista correspondente;
+- visualizar vencidos em uma área separada na página inicial;
+- receber lembrete quando o backup estiver há 15 dias sem atualização.
