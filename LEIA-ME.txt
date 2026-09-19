@@ -1,0 +1,26 @@
+CRONOGRAMAS DE TRABALHO — PWA
+
+CONTEÚDO DO PACOTE
+- index.html: aplicativo completo;
+- manifest.webmanifest: configurações de instalação;
+- service-worker.js: funcionamento offline;
+- pasta icons: ícones do aplicativo.
+
+COMO TESTAR
+O arquivo index.html pode ser aberto diretamente para testar e utilizar o sistema.
+Nesse modo, os dados também são salvos no navegador, mas a opção de instalar pode não aparecer.
+
+COMO INSTALAR COMO APLICATIVO NO COMPUTADOR
+1. Envie todos os arquivos e a pasta icons para o GitHub Pages ou Cloudflare Pages.
+2. Abra o endereço publicado no Google Chrome ou Microsoft Edge.
+3. Entre na aba Configurações.
+4. Clique em "Instalar aplicativo".
+
+Também é possível usar o ícone de instalação exibido no lado direito da barra de endereço.
+
+BACKUP
+Na aba Configurações, use "Exportar backup" para salvar os dados em JSON.
+Para recuperar os dados, clique em "Importar backup" e selecione o arquivo JSON.
+
+IMPORTANTE
+Os dados ficam armazenados no navegador e no computador utilizado. Faça backups periódicos.
