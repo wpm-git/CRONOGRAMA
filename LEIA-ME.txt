@@ -4,14 +4,14 @@ CONTEÚDO DO PACOTE
 - index.html: aplicativo completo;
 - manifest.webmanifest: configurações de instalação;
 - service-worker.js: funcionamento offline;
-- pasta icons: ícones do aplicativo.
+- cronograma-192.png e cronograma-512.png: ícones do aplicativo e imagem exibida no painel.
 
 COMO TESTAR
 O arquivo index.html pode ser aberto diretamente para testar e utilizar o sistema.
 Nesse modo, os dados também são salvos no navegador, mas a opção de instalar pode não aparecer.
 
 COMO INSTALAR COMO APLICATIVO NO COMPUTADOR
-1. Envie todos os arquivos e a pasta icons para o GitHub Pages ou Cloudflare Pages.
+1. Extraia o ZIP e envie todos os arquivos para o GitHub Pages ou Cloudflare Pages, incluindo cronograma-192.png e cronograma-512.png.
 2. Abra o endereço publicado no Google Chrome ou Microsoft Edge.
 3. Entre na aba Configurações.
 4. Clique em "Instalar aplicativo".
