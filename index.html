@@ -109,7 +109,7 @@
   </header>
   <main>
     <section id="home" class="page active">
-      <div class="hero"><div><h2>Cronogramas de trabalho</h2><p>Organize tarefas e acompanhe os vencimentos em dias corridos.</p></div><button class="btn primary add-big" data-add>+ Adicionar</button></div><div id="backupNotice"></div>
+      <div class="hero"><div><h2>Cronogramas de trabalho</h2><p>Organize tarefas e acompanhe os vencimentos em dias corridos.</p></div><button class="btn primary add-big" data-add>+ Adicionar</button></div><div id="backupNotice"></div><div id="syncStatus" role="status" aria-live="polite"></div>
       <div class="stats"><div class="stat open-stat" data-stat-filter="open" role="button" tabindex="0"><div class="stat-head"><span>Tarefas abertas</span><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg></div><strong id="stOpen">0</strong></div><div class="stat red" data-stat-filter="overdue" role="button" tabindex="0"><div class="stat-head"><span>Vencidas</span><svg viewBox="0 0 24 24"><path d="M12 4 3 20h18ZM12 9v5M12 17h.01"/></svg></div><strong id="stLate">0</strong></div><div class="stat today-stat" data-stat-filter="today" role="button" tabindex="0"><div class="stat-head"><span>Vencem hoje</span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></svg></div><strong id="stToday">0</strong></div><div class="stat tomorrow-stat" data-stat-filter="tomorrow" role="button" tabindex="0"><div class="stat-head"><span>Vencem amanhã</span><svg viewBox="0 0 24 24"><path d="M5 5h14v15H5zM8 3v4M16 3v4M5 9h14"/></svg></div><strong id="stTomorrow">0</strong></div><div class="stat finished-stat" data-stat-filter="finished" role="button" tabindex="0"><div class="stat-head"><span>Finalizadas</span><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div><strong id="stFinished">0</strong></div></div>
       <div id="alerts"></div><section id="overdueSection" class="due-section overdue-section hidden"><div class="page-title"><h2>Vencidos</h2></div><div id="overdueCards" class="cards"></div></section><section class="due-section"><div class="page-title"><h2>Próximos vencimentos</h2></div><div id="homeCards" class="cards"></div></section>
     </section>
@@ -123,7 +123,7 @@
         <div class="settings-card"><h3>Usuário</h3><p>Defina o nome que aparecerá na tela inicial.</p><div class="field"><label>Nome do usuário</label><input id="userName" maxlength="60" placeholder="Digite seu nome"></div><button class="btn primary" id="saveName">Salvar nome</button></div>
         <div class="settings-card"><h3>Backup dos dados</h3><p>Exporte periodicamente uma cópia de todos os registros e históricos.</p><div id="backupStatus" class="backup-status"></div><div class="settings-actions"><button class="btn primary" id="exportBtn">Exportar backup</button><button class="btn outline" id="importBtn">Importar backup</button><input id="importFile" type="file" accept="application/json,.json" hidden></div></div>
         <div class="settings-card"><h3>Instalar no computador</h3><p>Instale o sistema para abrir em uma janela própria e utilizar offline.</p><button class="btn primary" id="installSettings">Instalar aplicativo</button><p id="installHelp">Se o botão não estiver disponível, abra o menu do navegador e escolha “Instalar Cronogramas”.</p></div>
-        <div class="settings-card"><h3>Armazenamento</h3><p>Os registros permanecem somente neste navegador. Nenhum dado é enviado para servidores externos.</p><strong id="recordCount">0 registros armazenados</strong></div>
+        <div class="settings-card"><h3>Armazenamento</h3><p id="storageDescription">Os registros permanecem somente neste navegador.</p><strong id="recordCount">0 registros armazenados</strong></div>
       </div>
     </section>
   </main>
@@ -131,12 +131,61 @@
   <script>
   (()=>{
     'use strict';
+    const cloudMode = location.protocol !== 'file:' && location.hostname !== 'wpm-git.github.io';
+    let cloudVersion = 0, cloudReady = !cloudMode, cloudDirty = false, cloudSending = false, cloudConflict = false;
     const KEY='cronogramas_trabalho_v1', SETTINGS_KEY='cronogramas_config_v1';
     let records=load(), settings=loadSettings(), currentFinal='note', installPrompt=null, calendarCursor=new Date();
     const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
     function load(){try{const x=JSON.parse(localStorage.getItem(KEY));return Array.isArray(x)?x:[]}catch{return []}}
     function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||{name:''}}catch{return{name:''}}}
-    function save(){localStorage.setItem(KEY,JSON.stringify(records));render()}
+    function status(message){if(cloudMode)$('#syncStatus').textContent=message}
+    function save(){localStorage.setItem(KEY,JSON.stringify(records));render();if(cloudMode){cloudDirty=true;status('Salvando na nuvem…');void syncCloud()}}
+    async function syncCloud(){
+      if(!cloudMode||!cloudReady||cloudSending||cloudConflict||!cloudDirty)return;
+      cloudSending=true;
+      try{
+        while(cloudDirty){
+          cloudDirty=false;
+          const snapshot=JSON.stringify({version:cloudVersion,records,settings});
+          const response=await fetch('./api/state',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:snapshot,cache:'no-store'});
+          if(response.status===409){cloudConflict=true;cloudDirty=true;status('Conflito: há alterações em outro aparelho. Exporte um backup antes de atualizar.');toast('Conflito entre aparelhos. Exporte um backup.');break}
+          if(!response.ok)throw Error(`HTTP ${response.status}`);
+          cloudVersion=(await response.json()).version;
+          status(cloudDirty?'Salvando na nuvem…':'Salvo na nuvem.');
+        }
+      }catch{cloudDirty=true;status('Sem conexão: alterações neste aparelho aguardam sincronização.');}
+      finally{cloudSending=false}
+    }
+    async function startCloud(){
+      $('#storageDescription').textContent='Os registros são salvos no banco de dados privado e sincronizados após a conexão. Mantenha backups periódicos.';
+      const blocker=document.createElement('div');blocker.id='cloudBlocker';blocker.style='position:fixed;inset:0;z-index:9999;background:#0b0c10;color:#e0c276;display:grid;place-items:center;text-align:center;padding:24px;font:17px Arial';
+      blocker.textContent='Carregando seus cronogramas da nuvem…';document.body.append(blocker);
+      try{
+        const response=await fetch('./api/state',{credentials:'same-origin',cache:'no-store'});
+        if(!response.ok)throw Error(`HTTP ${response.status}`);
+        const data=await response.json();
+        if(!Array.isArray(data.records)||!Number.isSafeInteger(data.version))throw Error('resposta inválida');
+        cloudVersion=data.version;
+        const local=records;
+        records=data.records;settings=data.settings||{name:''};
+        localStorage.setItem(KEY,JSON.stringify(records));localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));
+        cloudReady=true;blocker.remove();render();updateClock();status('Salvo na nuvem.');
+        if(!cloudVersion&&local.length){
+          modal('Trazer dados deste navegador',`<p>Encontrei ${local.length} registro(s) salvos neste navegador. Deseja enviá-los para a nuvem?</p>`,
+            `<button class="btn secondary" data-close2>Agora não</button><button class="btn primary" id="migrateCloud">Enviar para a nuvem</button>`);
+          $('[data-close2]').onclick=closeModal;
+          $('#migrateCloud').onclick=()=>{records=local;save();closeModal()};
+        }
+      }catch{
+        blocker.innerHTML='<div>Não foi possível acessar os dados privados.<br><br><button id="retryCloud" class="btn primary">Tentar novamente</button></div>';
+        blocker.querySelector('#retryCloud').onclick=()=>{blocker.remove();startCloud()};
+      }
+    }
+    window.addEventListener('online',()=>{if(cloudDirty)void syncCloud()});
+    window.addEventListener('focus',async()=>{
+      if(!cloudMode||!cloudReady||cloudDirty||cloudSending||cloudConflict)return;
+      try{const r=await fetch('./api/state',{cache:'no-store'});if(!r.ok)return;const data=await r.json();if(data.version>cloudVersion){cloudVersion=data.version;records=data.records;settings=data.settings;localStorage.setItem(KEY,JSON.stringify(records));localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));render();updateClock();status('Dados atualizados da nuvem.')}}catch{}
+    });
     function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
     function todayISO(){const d=new Date();return localISO(d)}
     function localISO(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
@@ -177,12 +226,12 @@
     function empty(t){return `<div class="empty">${t}</div>`}
     function render(){const open=records.filter(r=>!r.finished),fin=records.filter(r=>r.finished),late=open.filter(r=>diff(r.due)<0),today=open.filter(r=>diff(r.due)===0),tom=open.filter(r=>diff(r.due)===1);$('#welcomeLine').textContent=settings.name?`Olá, ${settings.name} — controle de anotações, movimentações e prazos`:'Controle de anotações, movimentações e prazos';$('#userName').value=settings.name||'';$('#recordCount').textContent=`${records.length} ${records.length===1?'registro armazenado':'registros armazenados'}`;$('#stOpen').textContent=open.length;$('#stLate').textContent=late.length;$('#stToday').textContent=today.length;$('#stTomorrow').textContent=tom.length;$('#stFinished').textContent=fin.length;const alert=[...late,...today,...tom].sort((a,b)=>a.due.localeCompare(b.due));$('#alerts').innerHTML=alert.length?`<div class="alert-panel"><div class="alert-title">❗ Atenção aos prazos</div>${alert.map(r=>`<div class="alert-item"><strong>${r.type==='ip'?'Tarefa IP':'Tarefa'}:</strong> ${esc(r.type==='ip'?r.ip:r.description)} — ${deadline(r.due).text}</div>`).join('')}</div>`:'';const near=[...open].sort((a,b)=>a.due.localeCompare(b.due)).slice(0,5);$('#homeCards').innerHTML=near.length?near.map(r=>card(r)).join(''):empty('Nenhuma tarefa aberta.');const qn=$('#searchNotes').value.toLowerCase(),fn=$('#filterNotes').value,notes=open.filter(r=>r.type==='note'&&hay(r).includes(qn)&&matchesFilter(r,fn)).sort((a,b)=>a.due.localeCompare(b.due));$('#notesCards').innerHTML=notes.length?notes.map(r=>card(r)).join(''):empty('Nenhuma anotação encontrada.');const qi=$('#searchIps').value.toLowerCase(),fi=$('#filterIps').value,sit=$('#situationFilter').value.toLowerCase(),ips=open.filter(r=>r.type==='ip'&&hay(r).includes(qi)&&r.situation.toLowerCase().includes(sit)&&matchesFilter(r,fi)).sort((a,b)=>a.due.localeCompare(b.due));$('#ipsCards').innerHTML=ips.length?ips.map(r=>card(r)).join(''):empty('Nenhuma anotação com IP encontrada.');const qf=$('#searchFinished').value.toLowerCase(),finals=fin.filter(r=>r.type===currentFinal&&hay(r).includes(qf)).sort((a,b)=>String(b.finishedAt).localeCompare(String(a.finishedAt)));$('#finishedCards').innerHTML=finals.length?finals.map(r=>card(r,true)).join(''):empty('Nenhuma tarefa finalizada nesta categoria.');bindCards()}
     $$('nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));$$('[data-add]').forEach(b=>b.onclick=()=>b.dataset.add?openForm(b.dataset.add):pickType());$$('[data-stat-filter]').forEach(b=>{b.onclick=()=>showStatFilter(b.dataset.statFilter);b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showStatFilter(b.dataset.statFilter)}}});$('#calendarPrev').onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()-1,1);renderCalendar()};$('#calendarNext').onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+1,1);renderCalendar()};$('#calendarToday').onclick=()=>{calendarCursor=new Date();renderCalendar()};['searchNotes','filterNotes','searchIps','filterIps','situationFilter','searchFinished'].forEach(id=>$('#'+id).addEventListener('input',render));$$('[data-final]').forEach(b=>b.onclick=()=>{currentFinal=b.dataset.final;$$('[data-final]').forEach(x=>{x.classList.toggle('active',x===b);x.classList.toggle('secondary',x!==b)});render()});document.addEventListener('click',e=>{if(!e.target.closest('.menu-wrap'))closeMenus()});
-    $('#saveName').onclick=()=>{settings.name=$('#userName').value.trim();localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));render();updateClock();toast('Nome salvo.')};
+    $('#saveName').onclick=()=>{settings.name=$('#userName').value.trim();localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));save();updateClock();toast('Nome salvo.')};
     $('#exportBtn').onclick=()=>{settings.lastBackup=new Date().toISOString();localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));const blob=new Blob([JSON.stringify({app:'Cronogramas de Trabalho',version:1,exportedAt:settings.lastBackup,settings,records},null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`backup-cronogramas-${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href);updateBackupReminder();toast('Backup exportado.')};$('#importBtn').onclick=()=>$('#importFile').click();$('#importFile').onchange=e=>{const file=e.target.files[0];if(!file)return;const rd=new FileReader();rd.onload=()=>{try{const x=JSON.parse(rd.result),data=Array.isArray(x)?x:x.records;if(!Array.isArray(data))throw Error();modal('Importar backup',`<p>O arquivo contém <strong>${data.length}</strong> registro(s).</p><p>Os dados atuais serão substituídos. Deseja continuar?</p>`,`<button class="btn secondary" data-close2>Cancelar</button><button class="btn danger" id="confirmImport">Substituir dados</button>`);$('[data-close2]').onclick=closeModal;$('#confirmImport').onclick=()=>{records=data;if(x.settings){settings=x.settings;localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings))}save();closeModal();toast('Backup importado com sucesso.')}}catch{toast('Arquivo de backup inválido.')}};rd.readAsText(file);e.target.value=''};
     async function installApp(){if(!installPrompt){toast('Use a opção “Instalar aplicativo” no menu do navegador.');return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$('#installTop').classList.add('hidden')}
     window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;$('#installTop').classList.remove('hidden')});$('#installTop').onclick=installApp;$('#installSettings').onclick=installApp;window.addEventListener('appinstalled',()=>toast('Aplicativo instalado com sucesso.'));
-    if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
-    render();updateClock();setInterval(updateClock,1000);requestLocation();
+    if(!cloudMode&&'serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+    render();updateClock();setInterval(updateClock,1000);requestLocation();if(cloudMode)void startCloud();
   })();
   </script>
 </body>
