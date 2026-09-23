@@ -1,0 +1,9 @@
+.git/
+functions/
+worker.js
+wrangler.jsonc
+schema.sql
+_routes.json
+CLOUDFLARE.md
+LEIA-ME.txt
+.assetsignore
