@@ -1,5 +1,7 @@
 const reply = (data, status = 200) => Response.json(data, {status, headers: {'Cache-Control': 'no-store'}});
+const ensureSchema = db => db.prepare('CREATE TABLE IF NOT EXISTS app_state (id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL, payload TEXT NOT NULL)').run();
 export async function onRequestGet({env}) {
+  await ensureSchema(env.DB);
   const row = await env.DB.prepare('SELECT version, payload FROM app_state WHERE id = 1').first();
   return reply(row ? {version: row.version, ...JSON.parse(row.payload)} : {version: 0, records: [], settings: {name: ''}});
 }
@@ -14,6 +16,7 @@ export async function onRequestPut({request, env}) {
         typeof r.type === 'string' && typeof r.date === 'string' && typeof r.due === 'string' &&
         Array.isArray(r.history)) ||
       !input.settings || typeof input.settings !== 'object' || Array.isArray(input.settings)) return reply({error: 'Dados inválidos.'}, 400);
+  await ensureSchema(env.DB);
   const payload = JSON.stringify({records: input.records, settings: input.settings});
   let result;
   if (input.version === 0) {
