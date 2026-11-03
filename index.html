@@ -255,8 +255,8 @@
       const q=$('#searchOficios').value.trim().toLowerCase(),filter=$('#filterOficios').value;
       const data=oficios.filter(o=>(filter==='todos'||o.status===filter)&&[o.nome,o.descricao].join(' ').toLowerCase().includes(q)).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
       $('#oficiosCards').innerHTML=data.length?data.map(ofCard).join(''):empty('Nenhum ofício encontrado.');
-      $('[data-of-edit]').forEach(b=>b.onclick=()=>formOficio(b.dataset.ofEdit));
-      $('[data-of-delete]').forEach(b=>b.onclick=()=>deleteOficio(b.dataset.ofDelete));
+      $$('[data-of-edit]').forEach(b=>b.onclick=()=>formOficio(b.dataset.ofEdit));
+      $$('[data-of-delete]').forEach(b=>b.onclick=()=>deleteOficio(b.dataset.ofDelete));
     }
     function formOficio(id){
       const old=oficios.find(o=>o.id===id);
