@@ -104,7 +104,7 @@
     .of-latest{margin-bottom:17px}.of-latest .card{border-left-color:var(--green);background:#f3fbf6}
     .of-badge{display:inline-block;padding:5px 9px;border-radius:99px;font-size:12px;font-weight:750;background:#eef1f5;color:#36495b}
     .of-badge.enviado{background:#eaf4ff;color:#1769aa}.of-badge.respondido{background:#e4f7eb;color:#18794e}.of-badge.aguardando{background:#fff4d9;color:#966100}
-    .oficio-card .card-head{align-items:flex-start}.oficio-card p{overflow-wrap:anywhere}
+    .of-badge.positivo{background:#e4f7eb;color:#18794e}.of-badge.negativo{background:#fff0f0;color:#c93434}.of-response{padding:10px 12px;border-left:3px solid var(--line);background:#f7f9fc;border-radius:6px}.of-answer-fields{display:grid;gap:12px}.of-choice{display:flex;gap:18px;flex-wrap:wrap}.of-choice label{display:flex;align-items:center;gap:7px;font-weight:500}.of-choice input{width:auto}.of-latest-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 15px;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;background:#f3fbf6}.of-latest-line strong{overflow-wrap:anywhere}.oficio-card .card-head{align-items:flex-start}.oficio-card p{overflow-wrap:anywhere}
     @media(max-width:760px){.oficio-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.oficio-card .card-head{flex-direction:column}}
   </style>
 </head>
@@ -245,13 +245,14 @@
     function showStatFilter(type){const titles={open:'Tarefas abertas',overdue:'Tarefas vencidas',today:'Vencem hoje',tomorrow:'Vencem amanhã',finished:'Tarefas finalizadas'},items=records.filter(r=>type==='finished'?r.finished:!r.finished&&(type==='open'||type==='overdue'&&diff(r.due)<0||type==='today'&&diff(r.due)===0||type==='tomorrow'&&diff(r.due)===1));modal(titles[type],items.length?`<div class="stat-list">${items.sort((a,b)=>a.due.localeCompare(b.due)).map(r=>`<button data-stat-view="${r.id}"><span>${r.type==='ip'?`IP ${esc(r.ip)}`:esc(r.description.split(/\r?\n/)[0])}</span><small>${r.finished?'Finalizada':deadline(r.due).text}</small></button>`).join('')}</div>`:empty('Nenhum registro encontrado.'),`<button class="btn secondary" data-close2>Fechar</button>`,true);$('[data-close2]').onclick=closeModal;$$('[data-stat-view]').forEach(b=>b.onclick=()=>view(b.dataset.statView))}
     function empty(t){return `<div class="empty">${t}</div>`}
     const ofStatus={aguardando:'Aguardando assinatura',enviado:'Enviado',respondido:'Respondido'};
+    function ofResultBadge(o){return o.status==='respondido'&&['positivo','negativo'].includes(o.resultado)?` <span class="of-badge ${o.resultado}">${o.resultado==='positivo'?'Positivo':'Negativo'}</span>`:''}
     function ofDate(iso){return iso?new Date(iso).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'—'}
-    function ofCard(o){return `<article class="card oficio-card"><div class="card-head"><div><h3>${esc(o.nome)}</h3><span class="of-badge ${esc(o.status)}">${ofStatus[o.status]||'Aguardando assinatura'}</span></div><small>${ofDate(o.createdAt)}</small></div><p>${esc(o.descricao||'Sem descrição.')}</p><div class="meta"><span>Atualizado: ${ofDate(o.updatedAt||o.createdAt)}</span>${o.sentAt?`<span>Enviado: ${ofDate(o.sentAt)}</span>`:''}</div><div class="card-actions"><button class="btn secondary" data-of-edit="${esc(o.id)}">Editar / mudar status</button><button class="btn outline" data-of-delete="${esc(o.id)}">Excluir</button></div></article>`}
+    function ofCard(o){return `<article class="card oficio-card"><div class="card-head"><div><h3>${esc(o.nome)}</h3><span class="of-badge ${esc(o.status)}">${ofStatus[o.status]||'Aguardando assinatura'}</span>${ofResultBadge(o)}</div><small>${ofDate(o.createdAt)}</small></div><p>${esc(o.descricao||'Sem descrição.')}</p>${o.status==='respondido'&&o.resposta?`<p class="of-response"><strong>Resposta recebida:</strong> ${esc(o.resposta)}</p>`:''}<div class="meta"><span>Atualizado: ${ofDate(o.updatedAt||o.createdAt)}</span>${o.sentAt?`<span>Enviado: ${ofDate(o.sentAt)}</span>`:''}</div><div class="card-actions"><button class="btn secondary" data-of-edit="${esc(o.id)}">Editar / mudar status</button><button class="btn outline" data-of-delete="${esc(o.id)}">Excluir</button></div></article>`}
     function renderOficios(){
       const counts={aguardando:0,enviado:0,respondido:0};oficios.forEach(o=>{if(o.status in counts)counts[o.status]++});
       $('#ofTotal').textContent=oficios.length;$('#ofWaiting').textContent=counts.aguardando;$('#ofSent').textContent=counts.enviado;$('#ofAnswered').textContent=counts.respondido;
       const lastSent=oficios.filter(o=>o.sentAt||o.status==='enviado').sort((a,b)=>String(b.sentAt||b.updatedAt||b.createdAt).localeCompare(String(a.sentAt||a.updatedAt||a.createdAt)))[0];
-      $('#ofLatest').innerHTML=lastSent?`<h3>📤 Último ofício enviado</h3>${ofCard(lastSent)}`:'';
+      $('#ofLatest').innerHTML=lastSent?`<h3>📤 Último ofício enviado</h3><div class="of-latest-line"><strong>${esc(lastSent.nome)}</strong><span class="of-badge enviado">Enviado</span></div>`:'';
       const q=$('#searchOficios').value.trim().toLowerCase(),filter=$('#filterOficios').value;
       const data=oficios.filter(o=>(filter==='todos'||o.status===filter)&&[o.nome,o.descricao].join(' ').toLowerCase().includes(q)).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
       $('#oficiosCards').innerHTML=data.length?data.map(ofCard).join(''):empty('Nenhum ofício encontrado.');
@@ -261,9 +262,37 @@
     function formOficio(id){
       const old=oficios.find(o=>o.id===id);
       const options=Object.entries(ofStatus).map(([v,t])=>`<option value="${v}" ${(old?.status||'aguardando')===v?'selected':''}>${t}</option>`).join('');
-      modal(old?'Editar ofício':'Novo ofício',`<form id="oficioForm" class="form-grid"><div class="field full"><label>Nome ou número do ofício</label><input name="nome" maxlength="180" required value="${esc(old?.nome||'')}" placeholder="Ex.: Ofício nº 123/2026"></div><div class="field full"><label>Descrição / assunto</label><textarea name="descricao" placeholder="Descreva do que trata o ofício...">${esc(old?.descricao||'')}</textarea></div><div class="field full"><label>Status</label><select name="status">${options}</select></div></form>`,`<button class="btn secondary" data-close2>Cancelar</button><button class="btn primary" id="saveOficioForm">Salvar ofício</button>`);
+      const answerFields=`<div class="field full of-answer-fields" id="ofAnswerFields" style="display:none"><label for="ofResposta">Descrição da resposta recebida</label><textarea id="ofResposta" name="resposta" placeholder="Descreva a resposta recebida...">${esc(old?.resposta||'')}</textarea><label>Resultado da resposta</label><div class="of-choice"><label><input type="radio" name="resultado" value="positivo" ${old?.resultado==='positivo'?'checked':''}> Positivo</label><label><input type="radio" name="resultado" value="negativo" ${old?.resultado==='negativo'?'checked':''}> Negativo</label></div></div>`;
+      modal(old?'Editar ofício':'Novo ofício',`<form id="oficioForm" class="form-grid"><div class="field full"><label>Nome ou número do ofício</label><input name="nome" maxlength="180" required value="${esc(old?.nome||'')}" placeholder="Ex.: Ofício nº 123/2026"></div><div class="field full"><label>Descrição / assunto</label><textarea name="descricao" placeholder="Descreva do que trata o ofício...">${esc(old?.descricao||'')}</textarea></div><div class="field full"><label>Status</label><select name="status">${options}</select></div>${answerFields}</form>`,`<button class="btn secondary" data-close2>Cancelar</button><button class="btn primary" id="saveOficioForm">Salvar ofício</button>`);
       $('[data-close2]').onclick=closeModal;
-      $('#saveOficioForm').onclick=()=>{const form=$('#oficioForm');if(!form.reportValidity())return;const now=new Date().toISOString(),newStatus=form.elements.status.value;if(old){if(newStatus==='enviado'&&old.status!=='enviado')old.sentAt=now;old.nome=form.elements.nome.value.trim();old.descricao=form.elements.descricao.value.trim();old.status=newStatus;old.updatedAt=now}else{oficios.push({id:uid(),nome:form.elements.nome.value.trim(),descricao:form.elements.descricao.value.trim(),status:newStatus,createdAt:now,updatedAt:now,sentAt:newStatus==='enviado'?now:null})}saveOficios();closeModal();toast('Ofício salvo com sucesso.')};
+      const form=$('#oficioForm');
+      const updateAnswerFields=()=>{
+        const answered=form.elements.status.value==='respondido';
+        $('#ofAnswerFields').style.display=answered?'grid':'none';
+        form.elements.resposta.required=answered;
+        form.querySelectorAll('input[name="resultado"]').forEach(radio=>radio.required=answered);
+      };
+      form.elements.status.addEventListener('change',updateAnswerFields);
+      updateAnswerFields();
+      $('#saveOficioForm').onclick=()=>{
+        if(!form.reportValidity())return;
+        const now=new Date().toISOString(),newStatus=form.elements.status.value;
+        const result=newStatus==='respondido'?form.querySelector('input[name="resultado"]:checked')?.value||null:null;
+        const answer=newStatus==='respondido'?form.elements.resposta.value.trim():'';
+        if(newStatus==='respondido'&&(!result||!answer)){toast('Preencha a resposta e selecione Positivo ou Negativo.');return}
+        if(old){
+          if(newStatus==='enviado'&&old.status!=='enviado')old.sentAt=now;
+          old.nome=form.elements.nome.value.trim();
+          old.descricao=form.elements.descricao.value.trim();
+          old.status=newStatus;
+          old.resposta=answer;
+          old.resultado=result;
+          old.updatedAt=now;
+        }else{
+          oficios.push({id:uid(),nome:form.elements.nome.value.trim(),descricao:form.elements.descricao.value.trim(),status:newStatus,resposta:answer,resultado:result,createdAt:now,updatedAt:now,sentAt:newStatus==='enviado'?now:null});
+        }
+        saveOficios();closeModal();toast('Ofício salvo com sucesso.');
+      };
     }
     function deleteOficio(id){const o=oficios.find(x=>x.id===id);if(!o)return;modal('Excluir ofício',`<p>Excluir permanentemente <strong>${esc(o.nome)}</strong>?</p>`,`<button class="btn secondary" data-close2>Cancelar</button><button class="btn danger" id="confirmDeleteOficio">Excluir</button>`);$('[data-close2]').onclick=closeModal;$('#confirmDeleteOficio').onclick=()=>{oficios=oficios.filter(x=>x.id!==id);saveOficios();closeModal();toast('Ofício excluído.')}} 
     function render(){const open=records.filter(r=>!r.finished),fin=records.filter(r=>r.finished),late=open.filter(r=>diff(r.due)<0),today=open.filter(r=>diff(r.due)===0),tom=open.filter(r=>diff(r.due)===1);$('#welcomeLine').textContent=settings.name?`Olá, ${settings.name} — controle de anotações, movimentações e prazos`:'Controle de anotações, movimentações e prazos';$('#userName').value=settings.name||'';$('#recordCount').textContent=`${records.length} ${records.length===1?'registro armazenado':'registros armazenados'}`;$('#stOpen').textContent=open.length;$('#stLate').textContent=late.length;$('#stToday').textContent=today.length;$('#stTomorrow').textContent=tom.length;$('#stFinished').textContent=fin.length;const alert=[...late,...today,...tom].sort((a,b)=>a.due.localeCompare(b.due));$('#alerts').innerHTML=alert.length?`<div class="alert-panel"><div class="alert-title">❗ Atenção aos prazos</div>${alert.map(r=>`<div class="alert-item"><strong>${r.type==='ip'?'Tarefa IP':'Tarefa'}:</strong> ${esc(r.type==='ip'?r.ip:r.description)} — ${deadline(r.due).text}</div>`).join('')}</div>`:'';const near=[...open].sort((a,b)=>a.due.localeCompare(b.due)).slice(0,5);$('#homeCards').innerHTML=near.length?near.map(r=>card(r)).join(''):empty('Nenhuma tarefa aberta.');const qn=$('#searchNotes').value.toLowerCase(),fn=$('#filterNotes').value,notes=open.filter(r=>r.type==='note'&&hay(r).includes(qn)&&matchesFilter(r,fn)).sort((a,b)=>a.due.localeCompare(b.due));$('#notesCards').innerHTML=notes.length?notes.map(r=>card(r)).join(''):empty('Nenhuma anotação encontrada.');const qi=$('#searchIps').value.toLowerCase(),fi=$('#filterIps').value,sit=$('#situationFilter').value.toLowerCase(),ips=open.filter(r=>r.type==='ip'&&hay(r).includes(qi)&&r.situation.toLowerCase().includes(sit)&&matchesFilter(r,fi)).sort((a,b)=>a.due.localeCompare(b.due));$('#ipsCards').innerHTML=ips.length?ips.map(r=>card(r)).join(''):empty('Nenhuma anotação com IP encontrada.');const qf=$('#searchFinished').value.toLowerCase(),finals=fin.filter(r=>r.type===currentFinal&&hay(r).includes(qf)).sort((a,b)=>String(b.finishedAt).localeCompare(String(a.finishedAt)));$('#finishedCards').innerHTML=finals.length?finals.map(r=>card(r,true)).join(''):empty('Nenhuma tarefa finalizada nesta categoria.');bindCards();renderOficios()}
