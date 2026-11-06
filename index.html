@@ -271,8 +271,8 @@
       const data=oficios.filter(o=>(filter==='todos'||(filter==='vencido'?ofDue(o)?.days<0:o.status===filter))&&[o.nome,o.descricao].join(' ').toLowerCase().includes(q)).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
       $('#oficiosCards').innerHTML=data.length?data.map(ofCard).join(''):empty('Nenhum ofício encontrado.');
       $$('[data-of-edit]').forEach(b=>b.onclick=()=>formOficio(b.dataset.ofEdit));
-      $('[data-of-delete]').forEach(b=>b.onclick=()=>deleteOficio(b.dataset.ofDelete));
-      $('[data-of-reit]').forEach(b=>b.onclick=()=>reiterateOficio(b.dataset.ofReit));
+      document.querySelectorAll('[data-of-delete]').forEach(b=>b.onclick=()=>deleteOficio(b.dataset.ofDelete));
+      document.querySelectorAll('[data-of-reit]').forEach(b=>b.onclick=()=>reiterateOficio(b.dataset.ofReit));
     }
     function formOficio(id){
       const old=oficios.find(o=>o.id===id);
