@@ -106,7 +106,12 @@
     .of-badge.enviado{background:#eaf4ff;color:#1769aa}.of-badge.respondido{background:#e4f7eb;color:#18794e}.of-badge.aguardando{background:#fff4d9;color:#966100}
     .of-badge.positivo{background:#e4f7eb;color:#18794e}.of-badge.negativo{background:#fff0f0;color:#c93434}.of-response{padding:10px 12px;border-left:3px solid var(--line);background:#f7f9fc;border-radius:6px}.of-answer-fields{display:grid;gap:12px}.of-choice{display:flex;gap:18px;flex-wrap:wrap}.of-choice label{display:flex;align-items:center;gap:7px;font-weight:500}.of-choice input{width:auto}.of-latest-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 15px;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;background:#f3fbf6}.of-latest-line strong{overflow-wrap:anywhere}.of-late{padding:12px;background:#fff1f0;color:#9b2727;border:1px solid #e8b3b3;border-radius:10px;margin:12px 0;font-weight:700}.of-prazo{font-size:13px;color:#996700}.of-prazo.vencido{color:#b42318;font-weight:700}.oficio-card .card-head{align-items:flex-start}.oficio-card p{overflow-wrap:anywhere}
     @media(max-width:760px){.oficio-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.oficio-card .card-head{flex-direction:column}}
-      /* Cards de providências no STATUS */
+      .status-providence-edit{font-size:19px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);width:30px;height:30px;line-height:1;cursor:pointer;margin-left:auto}
+    .status-providence-editor{display:grid;gap:10px}
+    .status-providence-editor label{font-size:12px;color:var(--muted);display:grid;gap:5px}
+    .status-providence-editor textarea,.status-providence-editor input{width:100%;padding:9px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--text)}
+    .status-providence-editor-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+    /* Cards de providências no STATUS */
     .status-task-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px;margin-top:12px}
     .status-providence-card{display:flex;flex-direction:column;gap:12px;min-width:0;padding:17px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:0 4px 15px rgba(0,0,0,.08)}
     .status-providence-card.is-done{border-color:rgba(33,153,97,.38);background:linear-gradient(130deg,rgba(35,157,93,.09),transparent 65%),var(--card)}
@@ -137,7 +142,7 @@
     <section id="statusips" class="page">
       <div class="page-title"><h2>📋 STATUS dos IPs</h2><button class="btn primary" id="addStatusIp">+ Adicionar IP</button></div>
       <p style="color:var(--muted);margin:0 0 18px">Acompanhe o andamento de cada investigação. Clique em um IP para consultar ou atualizar as informações.</p>
-      <div class="toolbar"><input id="searchStatusIp" placeholder="Pesquisar IP, nome ou crime"></div>
+      <div class="toolbar"><input id="searchStatusIp" placeholder="Pesquisar IP, nome ou crime"><select id="filterStatusIp" aria-label="Filtrar IPs por pendências"><option value="todos">Todos os IPs</option><option value="pendentes">Somente com pendências</option></select></div>
       <div id="statusIpCards" class="cards"></div>
     </section>
     <section id="oficios" class="page">
@@ -357,17 +362,21 @@
     function renderStatusIps(){
       const target=$('#statusIpCards');if(!target)return;
       const q=($('#searchStatusIp')?.value||'').trim().toLowerCase();
-      const items=getStatusIps().filter(x=>[x.ip,x.referencia].join(' ').toLowerCase().includes(q)).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+      const filter=$('#filterStatusIp')?.value||'todos';
+      const items=getStatusIps().filter(x=>[x.ip,x.referencia].join(' ').toLowerCase().includes(q)&&(filter==='todos'||(Array.isArray(x.atividades)&&x.atividades.some(t=>!t.feito))||!!String(x.falta||'').trim())).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
       target.innerHTML=items.length?items.map(x=>{
         const tasks=Array.isArray(x.atividades)?x.atividades:[];
         const done=tasks.filter(t=>t.feito).length;
         const d=x.data?x.data.split('-').reverse().join('/'):'';
-        return '<article class="card" style="cursor:pointer" data-status-open="'+esc(x.id)+'" tabindex="0" role="button" aria-label="Abrir IP '+esc(x.ip)+'"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><strong style="font-size:17px">IP '+esc(x.ip)+'</strong>'+(x.referencia?'<div style="margin-top:7px;color:var(--muted)">'+esc(x.referencia)+'</div>':'')+(d?'<div style="margin-top:5px;color:var(--muted);font-size:12px">Data: '+esc(d)+'</div>':'')+(tasks.length?'<div style="margin-top:7px;font-size:12px;color:var(--muted)">'+done+' de '+tasks.length+' providências concluídas</div>':'')+'</div><span style="color:var(--muted)">Ver detalhes ›</span></div></article>';
+        const last=x.updatedAt?new Date(x.updatedAt):null;
+        const lastLabel=last&&!Number.isNaN(last.getTime())?last.toLocaleDateString('pt-BR')+' às '+last.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'—';
+        return '<article class="card" style="cursor:pointer" data-status-open="'+esc(x.id)+'" tabindex="0" role="button" aria-label="Abrir IP '+esc(x.ip)+'"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><strong style="font-size:17px">IP '+esc(x.ip)+'</strong>'+(x.referencia?'<div style="margin-top:7px;color:var(--muted)">'+esc(x.referencia)+'</div>':'')+(d?'<div style="margin-top:5px;color:var(--muted);font-size:12px">Data: '+esc(d)+'</div>':'')+'<div style="margin-top:6px;color:var(--muted);font-size:12px">Última movimentação: '+esc(lastLabel)+'</div>'+(tasks.length?'<div style="margin-top:7px;font-size:12px;color:var(--muted)">'+done+' de '+tasks.length+' providências concluídas</div>':'')+'</div><span style="color:var(--muted)">Ver detalhes ›</span></div></article>';
       }).join(''):'<div class="empty">Nenhum IP cadastrado nesta aba.</div>';
       target.querySelectorAll('[data-status-open]').forEach(el=>{const open=()=>openStatusIp(el.dataset.statusOpen);el.onclick=open;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}}});
     }
     function openStatusIp(id=null){
       const item=id?getStatusIps().find(x=>x.id===id):null;
+      let editingTask=-1;
       let tasks=(Array.isArray(item?.atividades)?item.atividades:[]).map(t=>({...t}));
       modal(item?'STATUS — IP '+esc(item.ip):'Adicionar IP',`<form id="statusIpForm" class="form-grid">
         <div class="field"><label>Número do IP</label><input name="ip" maxlength="100" required placeholder="Ex.: 123456/2026" value="${esc(item?.ip||'')}"></div>
@@ -385,14 +394,26 @@
           <article class="status-providence-card ${t.feito?'is-done':''}" data-task-idx="${i}">
             <div class="status-providence-head">
               <span class="status-providence-pill">${t.feito?'✓ Concluído':'○ Pendente'}</span>
+              <button class="status-providence-edit" type="button" data-task-edit="${i}" aria-label="Editar texto e data da providência" title="Editar texto e data">✎</button>
               <button class="status-providence-remove" type="button" data-task-remove="${i}" aria-label="Remover providência" title="Remover providência">×</button>
             </div>
-            <div class="status-providence-text ${t.feito?'done-text':''}">${esc(t.texto)}</div>
-            <div class="status-providence-date">📅 ${esc((t.data||'').split('-').reverse().join('/')||'Sem data')}${t.feito&&t.concluidoEm?' · Concluído em '+esc(t.concluidoEm.split('-').reverse().join('/')):''}</div>
+            <div class="status-providence-display" ${editingTask===i?'hidden':''}>
+              <div class="status-providence-text ${t.feito?'done-text':''}">${esc(t.texto)}</div>
+              <div class="status-providence-date">📅 ${esc((t.data||'').split('-').reverse().join('/')||'Sem data')}${t.feito&&t.concluidoEm?' · Concluído em '+esc(t.concluidoEm.split('-').reverse().join('/')):''}</div>
+            </div>
+            ${editingTask===i?`<div class="status-providence-editor"><label>Texto <textarea data-task-edit-text="${i}" maxlength="600" rows="3">${esc(t.texto)}</textarea></label><label>Data <input type="date" data-task-edit-date="${i}" value="${esc(t.data||'')}"></label><div class="status-providence-editor-actions"><button class="btn secondary" type="button" data-task-cancel="${i}">Cancelar</button><button class="btn primary" type="button" data-task-apply="${i}">Aplicar</button></div></div>`:''}
             <label class="status-providence-check"><input type="checkbox" data-task-check="${i}" ${t.feito?'checked':''}><span>${t.feito?'Marcar como pendente':'Marcar como feito'}</span></label>
           </article>`).join(''):'<p style="color:var(--muted);font-size:13px">Nenhuma providência adicionada.</p>';
         $('#statusTaskList').querySelectorAll('[data-task-check]').forEach(c=>c.onchange=()=>{const t=tasks[Number(c.dataset.taskCheck)];t.feito=c.checked;t.concluidoEm=c.checked?todayISO():null;drawTasks()});
-        $('#statusTaskList').querySelectorAll('[data-task-remove]').forEach(b=>b.onclick=()=>{tasks.splice(Number(b.dataset.taskRemove),1);drawTasks()});
+        $('#statusTaskList').querySelectorAll('[data-task-remove]').forEach(b=>b.onclick=()=>{const idx=Number(b.dataset.taskRemove);tasks.splice(idx,1);editingTask=-1;drawTasks()});
+        $('#statusTaskList').querySelectorAll('[data-task-edit]').forEach(b=>b.onclick=()=>{editingTask=Number(b.dataset.taskEdit);drawTasks();$('#statusTaskList [data-task-edit-text]')?.focus()});
+        $('#statusTaskList').querySelectorAll('[data-task-cancel]').forEach(b=>b.onclick=()=>{editingTask=-1;drawTasks()});
+        $('#statusTaskList').querySelectorAll('[data-task-apply]').forEach(b=>b.onclick=()=>{
+          const idx=Number(b.dataset.taskApply),txt=$('#statusTaskList [data-task-edit-text]')?.value.trim(),date=$('#statusTaskList [data-task-edit-date]')?.value;
+          if(!txt){toast('Informe o texto da providência.');return}
+          if(!date){toast('Informe a data da providência.');return}
+          tasks[idx].texto=txt;tasks[idx].data=date;editingTask=-1;drawTasks();
+        });
       }
             drawTasks();
       function addTask(){
@@ -404,7 +425,9 @@
       $('#statusNewTask').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addTask()}};
       $('#cancelStatusIp').onclick=closeModal;
       $('#statusIpForm').onsubmit=e=>{
-        e.preventDefault();const input=$('#statusNewTask');if(input.value.trim())addTask();
+        e.preventDefault();
+        if(editingTask>=0){toast('Clique em Aplicar ou Cancelar na providência que está sendo editada.');return}
+        const input=$('#statusNewTask');if(input.value.trim())addTask();
         const form=new FormData(e.currentTarget),ip=String(form.get('ip')||'').trim();if(!ip)return;
         const all=getStatusIps().slice();
         if(all.some(x=>x.ip.toLowerCase()===ip.toLowerCase()&&x.id!==id)){toast('Este IP já está cadastrado na aba STATUS.');return}
@@ -422,6 +445,7 @@
     $$('nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));$$('[data-add]').forEach(b=>b.onclick=()=>b.dataset.add?openForm(b.dataset.add):pickType());$$('[data-stat-filter]').forEach(b=>{b.onclick=()=>showStatFilter(b.dataset.statFilter);b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showStatFilter(b.dataset.statFilter)}}});$('#calendarPrev').onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()-1,1);renderCalendar()};$('#calendarNext').onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+1,1);renderCalendar()};$('#calendarToday').onclick=()=>{calendarCursor=new Date();renderCalendar()};['searchNotes','filterNotes','searchIps','filterIps','situationFilter','searchFinished'].forEach(id=>$('#'+id).addEventListener('input',render));$$('[data-final]').forEach(b=>b.onclick=()=>{currentFinal=b.dataset.final;$$('[data-final]').forEach(x=>{x.classList.toggle('active',x===b);x.classList.toggle('secondary',x!==b)});render()});document.addEventListener('click',e=>{if(!e.target.closest('.menu-wrap'))closeMenus()});
     $('#addStatusIp').onclick=()=>openStatusIp();
     $('#searchStatusIp').addEventListener('input',renderStatusIps);
+    $('#filterStatusIp').addEventListener('change',renderStatusIps);
     $('#addOficio').onclick=()=>formOficio(null);
     $('#searchOficios').addEventListener('input',renderOficios);
     $('#filterOficios').addEventListener('change',renderOficios);
