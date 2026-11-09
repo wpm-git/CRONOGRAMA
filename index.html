@@ -340,28 +340,56 @@
 
     // Acompanhamento de IPs: incluído em settings para utilizar o mesmo backup e a sincronização privada existentes.
     function getStatusIps(){return Array.isArray(settings.statusIps)?settings.statusIps:[]}
+
     function renderStatusIps(){
       const target=$('#statusIpCards');if(!target)return;
       const q=($('#searchStatusIp')?.value||'').trim().toLowerCase();
       const items=getStatusIps().filter(x=>[x.ip,x.referencia].join(' ').toLowerCase().includes(q)).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
-      target.innerHTML=items.length?items.map(x=>`<article class="card" style="cursor:pointer" data-status-open="${esc(x.id)}" tabindex="0" role="button" aria-label="Abrir IP ${esc(x.ip)}"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><strong style="font-size:17px">IP ${esc(x.ip)}</strong>${x.referencia?`<div style="margin-top:7px;color:var(--muted)">${esc(x.referencia)}</div>`:''}</div><span style="color:var(--muted)">Ver detalhes ›</span></div></article>`).join(''):'<div class="empty">Nenhum IP cadastrado nesta aba.</div>';
+      target.innerHTML=items.length?items.map(x=>{
+        const tasks=Array.isArray(x.atividades)?x.atividades:[];
+        const done=tasks.filter(t=>t.feito).length;
+        const d=x.data?x.data.split('-').reverse().join('/'):'';
+        return '<article class="card" style="cursor:pointer" data-status-open="'+esc(x.id)+'" tabindex="0" role="button" aria-label="Abrir IP '+esc(x.ip)+'"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><strong style="font-size:17px">IP '+esc(x.ip)+'</strong>'+(x.referencia?'<div style="margin-top:7px;color:var(--muted)">'+esc(x.referencia)+'</div>':'')+(d?'<div style="margin-top:5px;color:var(--muted);font-size:12px">Data: '+esc(d)+'</div>':'')+(tasks.length?'<div style="margin-top:7px;font-size:12px;color:var(--muted)">'+done+' de '+tasks.length+' providências concluídas</div>':'')+'</div><span style="color:var(--muted)">Ver detalhes ›</span></div></article>';
+      }).join(''):'<div class="empty">Nenhum IP cadastrado nesta aba.</div>';
       target.querySelectorAll('[data-status-open]').forEach(el=>{const open=()=>openStatusIp(el.dataset.statusOpen);el.onclick=open;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}}});
     }
     function openStatusIp(id=null){
       const item=id?getStatusIps().find(x=>x.id===id):null;
+      let tasks=(Array.isArray(item?.atividades)?item.atividades:[]).map(t=>({...t}));
       modal(item?'STATUS — IP '+esc(item.ip):'Adicionar IP',`<form id="statusIpForm" class="form-grid">
         <div class="field"><label>Número do IP</label><input name="ip" maxlength="100" required placeholder="Ex.: 123456/2026" value="${esc(item?.ip||'')}"></div>
         <div class="field"><label>Referência (opcional)</label><input name="referencia" maxlength="180" placeholder="Nome da pessoa ou crime" value="${esc(item?.referencia||'')}"></div>
-        <div class="field full"><label>O que já foi feito</label><textarea name="feito" rows="6" placeholder="Descreva as providências realizadas...">${esc(item?.feito||'')}</textarea></div>
-        <div class="field full"><label>O que falta fazer</label><textarea name="falta" rows="6" placeholder="Descreva as providências pendentes...">${esc(item?.falta||'')}</textarea></div>
+        <div class="field"><label>Data do acompanhamento</label><input type="date" name="data" value="${esc(item?.data||todayISO())}" required></div>
+        <div class="field full"><label>Providências — marque o que foi realizado</label><div id="statusTaskList" style="display:grid;gap:10px"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><input id="statusNewTask" style="flex:1;min-width:180px" maxlength="600" placeholder="Ex.: ouvir testemunha, solicitar laudo..."><input id="statusNewTaskDate" type="date" value="${todayISO()}" title="Data da providência" aria-label="Data da providência"><button type="button" class="btn secondary" id="statusAddTask">+ Adicionar</button></div>
+        <small style="color:var(--muted)">Cada providência possui uma data. Ao marcar, a conclusão fica registrada; desmarque para voltar a pendente.</small></div>
+        <div class="field full"><label>O que já foi feito — observações gerais</label><textarea name="feito" rows="3" placeholder="Outras informações sobre as providências realizadas...">${esc(item?.feito||'')}</textarea></div>
+        <div class="field full"><label>O que falta fazer — observações gerais</label><textarea name="falta" rows="3" placeholder="Outras pendências ou observações...">${esc(item?.falta||'')}</textarea></div>
         <div class="field full" style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn secondary" type="button" id="cancelStatusIp">Cancelar</button>${item?'<button class="btn danger" type="button" id="deleteStatusIp">Excluir IP</button>':''}<button class="btn primary" type="submit">Salvar STATUS</button></div>
       </form>`);
+      function drawTasks(){
+        $('#statusTaskList').innerHTML=tasks.length?tasks.map((t,i)=>`<div class="status-task-row" data-task-idx="${i}" style="border:1px solid var(--line);border-radius:11px;padding:10px;display:flex;align-items:flex-start;gap:10px">
+          <input type="checkbox" data-task-check="${i}" ${t.feito?'checked':''} aria-label="Marcar providência como concluída" style="margin-top:6px;flex:none;width:18px;height:18px">
+          <div style="flex:1;min-width:0"><div style="overflow-wrap:anywhere;${t.feito?'text-decoration:line-through;opacity:.65':''}">${esc(t.texto)}</div><small style="color:var(--muted)">Data: ${esc((t.data||'').split('-').reverse().join('/')||'—')}${t.feito&&t.concluidoEm?' • Concluído em '+esc(t.concluidoEm.split('-').reverse().join('/')):''}</small></div>
+          <button class="btn outline" type="button" data-task-remove="${i}" aria-label="Remover providência" title="Remover">×</button></div>`).join(''):'<p style="color:var(--muted);font-size:13px">Nenhuma providência adicionada.</p>';
+        $('#statusTaskList').querySelectorAll('[data-task-check]').forEach(c=>c.onchange=()=>{const t=tasks[Number(c.dataset.taskCheck)];t.feito=c.checked;t.concluidoEm=c.checked?todayISO():null;drawTasks()});
+        $('#statusTaskList').querySelectorAll('[data-task-remove]').forEach(b=>b.onclick=()=>{tasks.splice(Number(b.dataset.taskRemove),1);drawTasks()});
+      }
+      drawTasks();
+      function addTask(){
+        const el=$('#statusNewTask'),texto=el.value.trim();if(!texto){el.focus();return}
+        tasks.push({id:uid(),texto,data:$('#statusNewTaskDate').value||todayISO(),feito:false,concluidoEm:null});
+        el.value='';drawTasks();el.focus();
+      }
+      $('#statusAddTask').onclick=addTask;
+      $('#statusNewTask').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addTask()}};
       $('#cancelStatusIp').onclick=closeModal;
       $('#statusIpForm').onsubmit=e=>{
-        e.preventDefault();const form=new FormData(e.currentTarget),ip=String(form.get('ip')||'').trim();
-        if(!ip)return;
-        const all=getStatusIps().slice();if(all.some(x=>x.ip.toLowerCase()===ip.toLowerCase()&&x.id!==id)){toast('Este IP já está cadastrado na aba STATUS.');return}
-        const obj={id:item?.id||uid(),ip,referencia:String(form.get('referencia')||'').trim(),feito:String(form.get('feito')||'').trim(),falta:String(form.get('falta')||'').trim(),createdAt:item?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+        e.preventDefault();const input=$('#statusNewTask');if(input.value.trim())addTask();
+        const form=new FormData(e.currentTarget),ip=String(form.get('ip')||'').trim();if(!ip)return;
+        const all=getStatusIps().slice();
+        if(all.some(x=>x.ip.toLowerCase()===ip.toLowerCase()&&x.id!==id)){toast('Este IP já está cadastrado na aba STATUS.');return}
+        const obj={id:item?.id||uid(),ip,referencia:String(form.get('referencia')||'').trim(),data:String(form.get('data')||todayISO()),atividades:tasks,feito:String(form.get('feito')||'').trim(),falta:String(form.get('falta')||'').trim(),createdAt:item?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
         const pos=all.findIndex(x=>x.id===id);if(pos>=0)all[pos]=obj;else all.push(obj);
         settings.statusIps=all;save();closeModal();toast(item?'STATUS atualizado.':'IP adicionado ao STATUS.');
       };
