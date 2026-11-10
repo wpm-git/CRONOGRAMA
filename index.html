@@ -389,7 +389,7 @@
         <div class="field full"><label>Providências — marque o que foi realizado</label><div id="statusTaskList" class="status-task-grid"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><input id="statusNewTask" style="flex:1;min-width:180px" maxlength="600" placeholder="Ex.: ouvir testemunha, solicitar laudo..."><input id="statusNewTaskDate" type="date" value="${todayISO()}" title="Data da providência" aria-label="Data da providência"><button type="button" class="btn secondary" id="statusAddTask">+ Adicionar</button></div>
         <small style="color:var(--muted)">Cada providência possui uma data. Ao marcar, a conclusão fica registrada; desmarque para voltar a pendente.</small></div>
-        <div class="field full"><label>O que já foi feito — observações gerais</label><textarea name="feito" rows="3" placeholder="Outras informações sobre as providências realizadas...">${esc(item?.feito||'')}</textarea></div>
+        ${item?.history?.length?'<div class="field full"><label>Histórico do STATUS</label><div class="timeline">'+item.history.slice().reverse().map(h=>'<div class="event"><div class="event-time">'+esc(new Date(h.at).toLocaleString('pt-BR'))+'</div><div class="event-text">'+esc(h.text)+'</div></div>').join('')+'</div></div>':''}<div class="field full"><label>O que já foi feito — observações gerais</label><textarea name="feito" rows="3" placeholder="Outras informações sobre as providências realizadas...">${esc(item?.feito||'')}</textarea></div>
         <div class="field full"><label>O que falta fazer — observações gerais</label><textarea name="falta" rows="3" placeholder="Outras pendências ou observações...">${esc(item?.falta||'')}</textarea></div>
         <div class="field full" style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn secondary" type="button" id="cancelStatusIp">Cancelar</button>${item?'<button class="btn danger" type="button" id="deleteStatusIp">Excluir IP</button>':''}<button class="btn primary" type="submit">Salvar STATUS</button></div>
       </form>`);
@@ -435,7 +435,7 @@
         const form=new FormData(e.currentTarget),ip=String(form.get('ip')||'').trim();if(!ip)return;
         const all=getStatusIps().slice();
         if(all.some(x=>x.ip.toLowerCase()===ip.toLowerCase()&&x.id!==id)){toast('Este IP já está cadastrado na aba STATUS.');return}
-        const obj={id:item?.id||uid(),ip,referencia:String(form.get('referencia')||'').trim(),driveUrl:String(form.get('driveUrl')||'').trim(),data:String(form.get('data')||todayISO()),atividades:tasks,feito:String(form.get('feito')||'').trim(),falta:String(form.get('falta')||'').trim(),createdAt:item?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+        const obj={id:item?.id||uid(),ip,referencia:String(form.get('referencia')||'').trim(),driveUrl:String(form.get('driveUrl')||'').trim(),data:String(form.get('data')||todayISO()),atividades:tasks,history:[...(item?.history||[]),{at:new Date().toISOString(),text:item?'STATUS atualizado':'STATUS cadastrado'}],feito:String(form.get('feito')||'').trim(),falta:String(form.get('falta')||'').trim(),createdAt:item?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
         const pos=all.findIndex(x=>x.id===id);if(pos>=0)all[pos]=obj;else all.push(obj);
         settings.statusIps=all;save();closeModal();toast(item?'STATUS atualizado.':'IP adicionado ao STATUS.');
       };
