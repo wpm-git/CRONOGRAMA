@@ -186,7 +186,7 @@
     function saveOficios(){localStorage.setItem(OFICIOS_KEY,JSON.stringify(oficios));renderOficios()}
     function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||{name:''}}catch{return{name:''}}}
     function status(message){if(cloudMode)$('#syncStatus').textContent=message}
-    function save(){localStorage.setItem(KEY,JSON.stringify(records));render();if(cloudMode){cloudDirty=true;status('Salvando na nuvem…');void syncCloud()}}
+    function save(){localStorage.setItem(KEY,JSON.stringify(records));localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));render();if(cloudMode){cloudDirty=true;status('Salvando na nuvem…');void syncCloud()}}
     async function syncCloud(){
       if(!cloudMode||!cloudReady||cloudSending||cloudConflict||!cloudDirty)return;
       cloudSending=true;
