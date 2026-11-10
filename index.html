@@ -362,6 +362,21 @@
 
     // Acompanhamento de IPs: incluído em settings para utilizar o mesmo backup e a sincronização privada existentes.
     function driveButton(value){try{const u=new URL(String(value||''));if(u.protocol!=='https:'||!['drive.google.com','docs.google.com'].includes(u.hostname))return '';return '<a class="reference-link" href="'+esc(u.href)+'" target="_blank" rel="noopener noreferrer">📁 Abrir pasta no Drive</a>'}catch{return ''}}
+    function statusChangeSummary(old,form,tasks){
+      if(!old)return 'Acompanhamento criado com '+tasks.length+' providência(s).';
+      const changes=[],prior=Array.isArray(old.atividades)?old.atividades:[];
+      const oldMap=new Map(prior.map(t=>[t.id,t])),newMap=new Map(tasks.map(t=>[t.id,t]));
+      tasks.forEach(t=>{const o=oldMap.get(t.id);if(!o)changes.push('Providência adicionada: '+t.texto);else{
+        if(o.texto!==t.texto||o.data!==t.data)changes.push('Providência alterada: '+t.texto);
+        if(Boolean(o.feito)!==Boolean(t.feito))changes.push((t.feito?'Concluída: ':'Reaberta: ')+t.texto);
+      }});
+      prior.forEach(t=>{if(!newMap.has(t.id))changes.push('Providência removida: '+t.texto)});
+      for(const key of ['referencia','feito','falta','driveUrl']){
+        if(String(old[key]||'')!==String(form.get(key)||''))changes.push('Campo '+key+' atualizado');
+      }
+      if(String(old.ip)!==String(form.get('ip')))changes.push('Número do IP alterado');
+      return changes.join(' | ')||'STATUS revisado sem mudanças.';
+    }
     function getStatusIps(){return Array.isArray(settings.statusIps)?settings.statusIps:[]}
 
     function renderStatusIps(){
@@ -436,7 +451,7 @@
         const form=new FormData(e.currentTarget),ip=String(form.get('ip')||'').trim();if(!ip)return;
         const all=getStatusIps().slice();
         if(all.some(x=>x.ip.toLowerCase()===ip.toLowerCase()&&x.id!==id)){toast('Este IP já está cadastrado na aba STATUS.');return}
-        const obj={id:item?.id||uid(),ip,referencia:String(form.get('referencia')||'').trim(),driveUrl:String(form.get('driveUrl')||'').trim(),data:String(form.get('data')||todayISO()),atividades:tasks,history:[...(item?.history||[]),{at:new Date().toISOString(),text:item?'STATUS atualizado':'STATUS cadastrado'}],feito:String(form.get('feito')||'').trim(),falta:String(form.get('falta')||'').trim(),createdAt:item?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+        const obj={id:item?.id||uid(),ip,referencia:String(form.get('referencia')||'').trim(),driveUrl:String(form.get('driveUrl')||'').trim(),data:String(form.get('data')||todayISO()),atividades:tasks,history:[...(item?.history||[]),{at:new Date().toISOString(),text:statusChangeSummary(item,form,tasks)}],feito:String(form.get('feito')||'').trim(),falta:String(form.get('falta')||'').trim(),createdAt:item?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
         const pos=all.findIndex(x=>x.id===id);if(pos>=0)all[pos]=obj;else all.push(obj);
         settings.statusIps=all;save();closeModal();toast(item?'STATUS atualizado.':'IP adicionado ao STATUS.');
       };
