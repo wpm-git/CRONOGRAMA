@@ -588,7 +588,7 @@
         root.querySelectorAll('[data-extra-cautelar]').forEach(card=>{
           const index=Number(card.dataset.extraCautelar),c=extraCautelares[index];
           function visibility(){
-            const status=c.status||'',isBusca=/\\bbusca\\b/i.test(c.descricao||'');
+            const status=c.status||'',isBusca=/\bbusca\b/i.test(c.descricao||'');
             card.querySelector('[data-extra-decision-wrap]').classList.toggle('hidden',status!=='Respondido');
             card.querySelector('[data-extra-review-wrap]').classList.toggle('hidden',status!=='Respondido'||c.decisao!=='Indeferido');
             card.querySelector('[data-extra-search-wrap]').classList.toggle('hidden',!isBusca);
