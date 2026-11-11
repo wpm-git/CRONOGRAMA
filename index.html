@@ -450,6 +450,14 @@
         <div class="field" style="margin-top:12px"><label id="procDescriptionLabel">Descrição / informação</label><textarea id="procDescription" maxlength="4000" rows="4" placeholder="Descreva a atualização"></textarea></div>
         <div class="form-grid" style="margin-top:12px"><div class="field"><label>Data do fato ou recebimento</label><input id="procDate" type="date" value="${todayISO()}"></div><div class="field"><label>Resultado</label><select id="procResult"><option value="">Não informado</option><option>Positivo</option><option>Negativo</option><option>Parcial</option><option>Integral</option><option>Deferido</option><option>Indeferido</option><option>Cumprido</option><option>Não cumprido</option></select></div></div>
         <div class="field" style="margin-top:12px"><label>Link do documento (opcional)</label><input id="procDocument" type="url" placeholder="https://drive.google.com/..."></div>
+        <div class="form-grid" style="margin-top:12px">
+          <div class="field" id="procNumberWrap"><label>Número do novo registro</label><input id="procNumber" maxlength="150" placeholder="Número da cautelar ou ofício"></div>
+          <div class="field" id="procDeadlineWrap"><label>Prazo de resposta (dias)</label><input id="procDeadline" type="number" min="1" max="3650"></div>
+          <div class="field" id="procDeadlineTypeWrap"><label>Contagem do prazo</label><select id="procDeadlineType"><option value="corridos">Dias corridos</option><option value="uteis">Dias úteis (sem feriados)</option></select></div>
+          <div class="field" id="procPriorityWrap"><label>Prioridade</label><select id="procPriority"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></div>
+          <div class="field" id="procSearchWrap"><label>Busca realizada?</label><select id="procSearch"><option value="">Não informado</option><option value="nao">Não</option><option value="sim">Sim</option></select></div>
+          <div class="field" id="procSearchResultWrap"><label>Resultado da busca</label><select id="procSearchResult"><option value="">Não informado</option><option value="positivo">Positivo</option><option value="negativo">Negativo</option></select></div>
+        </div>
         <div class="field" style="margin-top:12px"><label>Responsável pela atualização</label><input id="procUser" maxlength="120" value="${esc(settings.name||'')}" placeholder="Identificação do responsável"></div>
         <div class="modal-foot" style="padding:14px 0 0"><button type="button" class="btn secondary" id="procCancel">Cancelar</button><button type="button" class="btn primary" id="procSave">Salvar atualização</button></div>
         ${events.length?'<h4>Últimas atualizações</h4><div class="timeline">'+events.slice(-10).reverse().map(e=>'<div class="event"><div class="event-time">'+esc(new Date(e.at).toLocaleString('pt-BR'))+' · '+esc(e.user||'Não identificado')+'</div><div class="event-text">'+esc(e.type+': '+e.description)+'</div></div>').join('')+'</div>':''}`);
@@ -465,6 +473,12 @@
         $('#procLinkedWrap').classList.toggle('hidden',!['resposta','reiteracao','cautelar_atualizar','concluir'].includes(a));
         select.innerHTML=options.map(([v,t])=>'<option value="'+esc(v)+'">'+esc(t)+'</option>').join('');
         $('#procSave').disabled=$('#procLinkedWrap').classList.contains('hidden')?false:!options.length;
+        $('#procNumberWrap').classList.toggle('hidden',!['cautelar','oficio'].includes(a));
+        $('#procDeadlineWrap').classList.toggle('hidden',a!=='oficio');
+        $('#procDeadlineTypeWrap').classList.toggle('hidden',a!=='oficio');
+        $('#procPriorityWrap').classList.toggle('hidden',a!=='providencia');
+        $('#procSearchWrap').classList.toggle('hidden',!['cautelar','cautelar_atualizar'].includes(a));
+        $('#procSearchResultWrap').classList.toggle('hidden',!['cautelar','cautelar_atualizar'].includes(a));
         $('#procDescriptionLabel').textContent=a==='cautelar'?'Número e descrição da cautelar':a==='oficio'?'Número e descrição do ofício':'Descrição / informação';
       }
       $('#procAction').onchange=changeAction;changeAction();
@@ -476,25 +490,28 @@
         if(!description&&!['concluir'].includes(a)){toast('Descreva a atualização.');return}
         if(documentUrl&&!/^https:\/\//i.test(documentUrl)){toast('Informe um link HTTPS válido.');return}
         if(['resposta','reiteracao','cautelar_atualizar','concluir'].includes(a)&&!related){toast('Selecione um registro relacionado.');return}
+        const number=$('#procNumber').value.trim(),deadline=Number($('#procDeadline').value||0),deadlineType=$('#procDeadlineType').value,priority=$('#procPriority').value,searchDone=$('#procSearch').value,searchResult=$('#procSearchResult').value;
+        if(['cautelar','oficio'].includes(a)&&!number){toast('Informe o número do registro.');return}
+        if(a==='resposta'&&!result){toast('Informe se a resposta é parcial, positiva, negativa ou integral.');return}
         const now=new Date().toISOString();
         const event={id:uid(),type:a,description,date,result,documentUrl,user,relatedId:related||null,at:now};
         if(a==='cautelar'){
           if(!Array.isArray(ip.cautelares))ip.cautelares=[];
           const parts=description.split(/\s+[-–:]\s+/,2);
-          const numero=parts.length>1?parts[0]:description;
+          const numero=number;
           if(ip.cautelares.some(c=>String(c.numero).toLowerCase()===numero.toLowerCase())){toast('Cautelar já cadastrada neste IP. Utilize Atualizar cautelar.');return}
-          ip.cautelares.push({id:uid(),numero,descricao:description,status:'Aguardando decisão',createdAt:now});
+          ip.cautelares.push({id:uid(),numero,descricao:description,status:'Aguardando decisão',buscaRealizada:searchDone,buscaResultado:searchDone==='sim'?searchResult:'',createdAt:now});
         }
         if(a==='cautelar_atualizar'){
           let c=(ip.cautelares||[]).find(c=>c.id===related);if(related==='legacy'){c={id:uid(),numero:ip.cautelarNumero,descricao:ip.cautelarDescricao,status:ip.cautelarStatus||'',createdAt:ip.createdAt};if(!Array.isArray(ip.cautelares))ip.cautelares=[];ip.cautelares.push(c);ip.cautelarNumero='';ip.cautelarDescricao=''}if(!c)return;
-          c.status=result||c.status;c.updatedAt=now;
+          c.status=result||c.status;c.buscaRealizada=searchDone||c.buscaRealizada||'';c.buscaResultado=searchDone==='sim'?searchResult:(searchDone==='nao'?'':c.buscaResultado||'');c.updatedAt=now;
         }
-        if(a==='providencia'){if(!Array.isArray(ip.atividades))ip.atividades=[];ip.atividades.push({id:uid(),texto:description,data:date,feito:false,concluidoEm:null})}
+        if(a==='providencia'){if(!Array.isArray(ip.atividades))ip.atividades=[];ip.atividades.push({id:uid(),texto:description,data:date,feito:false,concluidoEm:null,prioridade:priority,responsavel:user})}
         if(a==='concluir'){const t=(ip.atividades||[]).find(t=>t.id===related);if(!t)return;t.feito=true;t.concluidoEm=date}
         if(a==='oficio'){
-          const numero=description.split(/\s+[-–:]\s+/,2)[0];
+          const numero=number;
           if(oficios.some(o=>normalizeProcedureIp(o.ipVinculado)===normalizeProcedureIp(ip.ip)&&o.nome.toLowerCase()===numero.toLowerCase())){toast('Ofício já cadastrado para este IP.');return}
-          oficios.push({id:uid(),nome:numero,descricao:description,ipVinculado:ip.ip,status:'aguardando',createdAt:now,updatedAt:now});
+          oficios.push({id:uid(),nome:numero,descricao:description,ipVinculado:ip.ip,status:'aguardando',prazoDias:deadline||null,prazoTipo:deadlineType,createdAt:now,updatedAt:now});
           saveOficios();
         }
         if(a==='resposta'){
