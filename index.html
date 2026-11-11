@@ -486,7 +486,7 @@
         $('#procSearchResultWrap').classList.toggle('hidden',!['cautelar','cautelar_atualizar'].includes(a));
         $('#procDescriptionLabel').textContent=a==='cautelar'?'Número e descrição da cautelar':a==='oficio'?'Número e descrição do ofício':'Descrição / informação';
       }
-      $('#procAction').onchange=changeAction;$('#procDescription').addEventListener('input',changeAction);changeAction();
+      $('#procAction').onchange=changeAction;$('#procDescription').addEventListener('input',()=>{const bank=['cautelar','cautelar_atualizar'].includes($('#procAction').value)&&isBankSecrecyCautelar($('#procDescription').value);$('#procBankNumberWrap').classList.toggle('hidden',!bank);$('#procBankPeopleWrap').classList.toggle('hidden',!bank)});changeAction();
       $('#procCancel').onclick=closeModal;
       $('#procSave').onclick=()=>{
         const a=$('#procAction').value,description=$('#procDescription').value.trim(),related=$('#procLinked').value;
@@ -542,7 +542,7 @@
         ip.updatedAt=now;settings.statusIps=getStatusIps().slice();save();closeModal();toast('Atualização vinculada ao IP '+ip.ip+'.');
       };
     }
-    function isBankSecrecyCautelar(value){return /(?:sigilo\\s+banc[aá]rio|quebra\\s+(?:e\\s+)?bloqueio|bloqueio\\s+(?:de\\s+)?(?:sigilo\\s+)?banc[aá]rio)/i.test(String(value||''))}
+    function isBankSecrecyCautelar(value){return /(?:sigilo\s+banc[aá]rio|quebra\s+(?:e\s+)?bloqueio|bloqueio\s+(?:de\s+)?(?:sigilo\s+)?banc[aá]rio)/i.test(String(value||''))}
     function openStatusIp(id=null){
       const item=id?getStatusIps().find(x=>x.id===id):null;
       let editingTask=-1;
