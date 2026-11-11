@@ -133,7 +133,7 @@
   </header>
   <main>
     <section id="home" class="page active">
-      <div class="hero"><div><h2>Cronogramas de trabalho</h2><p>Organize tarefas e acompanhe os vencimentos em dias corridos.</p></div><button class="btn primary add-big" data-add>+ Adicionar</button></div><div id="backupNotice"></div><div id="syncStatus" role="status" aria-live="polite"></div>
+      <div class="hero"><div><h2>Cronogramas de trabalho</h2><p>Organize tarefas e acompanhe os vencimentos em dias corridos.</p></div><button class="btn primary add-big" data-add>+ Adicionar</button></div><div id="backupNotice"></div><div id="syncStatus" role="status" aria-live="polite">🔒 Armazenamento local neste navegador. Faça backups periódicos.</div>
       <div class="stats"><div class="stat open-stat" data-stat-filter="open" role="button" tabindex="0"><div class="stat-head"><span>Tarefas abertas</span><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg></div><strong id="stOpen">0</strong></div><div class="stat red" data-stat-filter="overdue" role="button" tabindex="0"><div class="stat-head"><span>Vencidas</span><svg viewBox="0 0 24 24"><path d="M12 4 3 20h18ZM12 9v5M12 17h.01"/></svg></div><strong id="stLate">0</strong></div><div class="stat today-stat" data-stat-filter="today" role="button" tabindex="0"><div class="stat-head"><span>Vencem hoje</span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></svg></div><strong id="stToday">0</strong></div><div class="stat tomorrow-stat" data-stat-filter="tomorrow" role="button" tabindex="0"><div class="stat-head"><span>Vencem amanhã</span><svg viewBox="0 0 24 24"><path d="M5 5h14v15H5zM8 3v4M16 3v4M5 9h14"/></svg></div><strong id="stTomorrow">0</strong></div><div class="stat finished-stat" data-stat-filter="finished" role="button" tabindex="0"><div class="stat-head"><span>Finalizadas</span><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></div><strong id="stFinished">0</strong></div></div>
       <section class="due-section"><div class="page-title"><h2>📌 Agenda de prioridades — próximos 7 dias</h2></div><div id="priorityResults"></div></section><div id="alerts"></div><section id="overdueSection" class="due-section overdue-section hidden"><div class="page-title"><h2>Vencidos</h2></div><div id="overdueCards" class="cards"></div></section><section class="due-section"><div class="page-title"><h2>Próximos vencimentos</h2></div><div id="homeCards" class="cards"></div></section>
     </section>
@@ -176,14 +176,14 @@
   <script>
   (()=>{
     'use strict';
-    const cloudMode = location.protocol !== 'file:' && location.hostname !== 'wpm-git.github.io';
+    const cloudMode = false; // Dados do Cronograma ficam exclusivamente no armazenamento local deste navegador.
     let cloudVersion = 0, cloudReady = !cloudMode, cloudDirty = false, cloudSending = false, cloudConflict = false;
     const KEY='cronogramas_trabalho_v1', SETTINGS_KEY='cronogramas_config_v1', OFICIOS_KEY='cronogramas_oficios_v1';
     let records=load(), settings=loadSettings(), oficios=loadOficios(), currentFinal='note', installPrompt=null, calendarCursor=new Date();
     const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
     function load(){try{const x=JSON.parse(localStorage.getItem(KEY));return Array.isArray(x)?x:[]}catch{return []}}
     function loadOficios(){try{const x=JSON.parse(localStorage.getItem(OFICIOS_KEY));return Array.isArray(x)?x:[]}catch{return []}}
-    function saveOficios(){localStorage.setItem(OFICIOS_KEY,JSON.stringify(oficios));renderOficios()}
+    function saveOficios(){localStorage.setItem(OFICIOS_KEY,JSON.stringify(oficios));renderOficios();renderStatusIps();updateReport();updateGlobal()}
     function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||{name:''}}catch{return{name:''}}}
     function status(message){if(cloudMode)$('#syncStatus').textContent=message}
     function save(){localStorage.setItem(KEY,JSON.stringify(records));localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));render();if(cloudMode){cloudDirty=true;status('Salvando na nuvem…');void syncCloud()}}
@@ -204,7 +204,7 @@
       finally{cloudSending=false}
     }
     async function startCloud(){
-      $('#storageDescription').textContent='Os registros são salvos no banco de dados privado e sincronizados após a conexão. Mantenha backups periódicos.';
+      $('#storageDescription').textContent='Os registros são salvos neste navegador. Exporte backups periódicos.';
       const blocker=document.createElement('div');blocker.id='cloudBlocker';blocker.style='position:fixed;inset:0;z-index:9999;background:#0b0c10;color:#e0c276;display:grid;place-items:center;text-align:center;padding:24px;font:17px Arial';
       blocker.textContent='Carregando seus cronogramas da nuvem…';document.body.append(blocker);
       try{
