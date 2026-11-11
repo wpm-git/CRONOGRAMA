@@ -371,7 +371,7 @@
         if(Boolean(o.feito)!==Boolean(t.feito))changes.push((t.feito?'Concluída: ':'Reaberta: ')+t.texto);
       }});
       prior.forEach(t=>{if(!newMap.has(t.id))changes.push('Providência removida: '+t.texto)});
-      for(const key of ['referencia','feito','falta','driveUrl']){
+      for(const key of ['referencia','feito','falta','driveUrl','cautelarNumero','cautelarDescricao','cautelarStatus','cautelarDecisao','cautelarReanalise','cautelarBuscaRealizada','cautelarBuscaSucesso']){
         if(String(old[key]||'')!==String(form.get(key)||''))changes.push('Campo '+key+' atualizado');
       }
       if(String(old.ip)!==String(form.get('ip')))changes.push('Número do IP alterado');
@@ -383,14 +383,14 @@
       const target=$('#statusIpCards');if(!target)return;
       const q=($('#searchStatusIp')?.value||'').trim().toLowerCase();
       const filter=$('#filterStatusIp')?.value||'todos';
-      const items=getStatusIps().filter(x=>[x.ip,x.referencia].join(' ').toLowerCase().includes(q)&&(filter==='todos'||(Array.isArray(x.atividades)&&x.atividades.some(t=>!t.feito))||!!String(x.falta||'').trim())).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+      const items=getStatusIps().filter(x=>[x.ip,x.referencia,x.cautelarNumero,x.cautelarDescricao,x.cautelarStatus,x.cautelarDecisao].join(' ').toLowerCase().includes(q)&&(filter==='todos'||(Array.isArray(x.atividades)&&x.atividades.some(t=>!t.feito))||!!String(x.falta||'').trim())).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
       target.innerHTML=items.length?items.map(x=>{
         const tasks=Array.isArray(x.atividades)?x.atividades:[];
         const done=tasks.filter(t=>t.feito).length;
         const d=x.data?x.data.split('-').reverse().join('/'):'';
         const last=x.updatedAt?new Date(x.updatedAt):null;
         const lastLabel=last&&!Number.isNaN(last.getTime())?last.toLocaleDateString('pt-BR')+' às '+last.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'—';
-        return '<article class="card" style="cursor:pointer" data-status-open="'+esc(x.id)+'" tabindex="0" role="button" aria-label="Abrir IP '+esc(x.ip)+'"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><strong style="font-size:17px">IP '+esc(x.ip)+'</strong>'+(x.referencia?'<div style="margin-top:7px;color:var(--muted)">'+esc(x.referencia)+'</div>':'')+(x.driveUrl?'<div style="margin-top:8px">'+driveButton(x.driveUrl)+'</div>':'')+(d?'<div style="margin-top:5px;color:var(--muted);font-size:12px">Data: '+esc(d)+'</div>':'')+'<div style="margin-top:6px;color:var(--muted);font-size:12px">Última movimentação: '+esc(lastLabel)+'</div>'+(tasks.length?'<div style="margin-top:7px;font-size:12px;color:var(--muted)">'+done+' de '+tasks.length+' providências concluídas</div>':'')+'</div><span style="color:var(--muted)">Ver detalhes ›</span></div></article>';
+        return '<article class="card" style="cursor:pointer" data-status-open="'+esc(x.id)+'" tabindex="0" role="button" aria-label="Abrir IP '+esc(x.ip)+'"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><strong style="font-size:17px">IP '+esc(x.ip)+'</strong>'+(x.referencia?'<div style="margin-top:7px;color:var(--muted)">'+esc(x.referencia)+'</div>':'')+(x.cautelarNumero||x.cautelarDescricao?'<div style="margin-top:8px;font-size:13px"><strong>⚖ Cautelar '+esc(x.cautelarNumero||'sem número')+'</strong>'+(x.cautelarDescricao?' — '+esc(x.cautelarDescricao):'')+'<div style="margin-top:4px;color:var(--muted)">Situação: '+esc(x.cautelarStatus||'Não informada')+(x.cautelarStatus==='Respondido'?' · '+esc(x.cautelarDecisao||'Sem decisão')+(x.cautelarDecisao==='Indeferido'?' · Reanálise: '+esc(x.cautelarReanalise||'Não informado'):''):'')+(x.cautelarBuscaRealizada?' · Busca realizada: '+esc(x.cautelarBuscaRealizada)+(x.cautelarBuscaRealizada==='Sim'?' · Sucesso: '+esc(x.cautelarBuscaSucesso||'Não informado'):''):'')+'</div></div>':'')+(x.driveUrl?'<div style="margin-top:8px">'+driveButton(x.driveUrl)+'</div>':'')+(d?'<div style="margin-top:5px;color:var(--muted);font-size:12px">Data: '+esc(d)+'</div>':'')+'<div style="margin-top:6px;color:var(--muted);font-size:12px">Última movimentação: '+esc(lastLabel)+'</div>'+(tasks.length?'<div style="margin-top:7px;font-size:12px;color:var(--muted)">'+done+' de '+tasks.length+' providências concluídas</div>':'')+'</div><span style="color:var(--muted)">Ver detalhes ›</span></div></article>';
       }).join(''):'<div class="empty">Nenhum IP cadastrado nesta aba.</div>';
       target.querySelectorAll('.reference-link').forEach(a=>a.onclick=e=>e.stopPropagation()); target.querySelectorAll('[data-status-open]').forEach(el=>{const open=()=>openStatusIp(el.dataset.statusOpen);el.onclick=open;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}}});
     }
@@ -401,6 +401,13 @@
       modal(item?'STATUS — IP '+esc(item.ip):'Adicionar IP',`<form id="statusIpForm" class="form-grid">
         <div class="field"><label>Número do IP</label><input name="ip" maxlength="100" required placeholder="Ex.: 123456/2026" value="${esc(item?.ip||'')}"></div>
         <div class="field"><label>Referência (opcional)</label><input name="referencia" maxlength="180" placeholder="Nome da pessoa ou crime" value="${esc(item?.referencia||'')}"></div>
+        <div class="field"><label>Número da cautelar (opcional)</label><input name="cautelarNumero" maxlength="120" placeholder="Ex.: 0001234-56.2026.8.16.0000" value="${esc(item?.cautelarNumero||'')}"></div>
+        <div class="field full"><label>Descrição da cautelar (opcional)</label><textarea name="cautelarDescricao" id="statusCautelarDescricao" rows="2" maxlength="1000" placeholder="Ex.: busca e apreensão, prisão preventiva...">${esc(item?.cautelarDescricao||'')}</textarea><small style="color:var(--muted)">Ao mencionar “busca”, aparecem os campos de cumprimento da busca.</small></div>
+        <div class="field"><label>Situação da cautelar</label><select name="cautelarStatus" id="statusCautelarStatus"><option value="">Não informada</option>${['Feita','Aguardando resposta','Respondido'].map(v=>'<option value="'+v+'" '+(item?.cautelarStatus===v?'selected':'')+'>'+v+'</option>').join('')}</select></div>
+        <div class="field hidden" id="statusCautelarDecisaoWrap"><label>Decisão da cautelar</label><select name="cautelarDecisao" id="statusCautelarDecisao"><option value="">Selecione</option>${['Deferido','Indeferido'].map(v=>'<option value="'+v+'" '+(item?.cautelarDecisao===v?'selected':'')+'>'+v+'</option>').join('')}</select></div>
+        <div class="field hidden" id="statusCautelarReanaliseWrap"><label>Enviou pedido de reanálise?</label><select name="cautelarReanalise" id="statusCautelarReanalise"><option value="">Selecione</option><option value="Sim" ${item?.cautelarReanalise==='Sim'?'selected':''}>Sim</option><option value="Não" ${item?.cautelarReanalise==='Não'?'selected':''}>Não</option></select></div>
+        <div class="field hidden" id="statusCautelarBuscaWrap"><label>Busca realizada?</label><select name="cautelarBuscaRealizada" id="statusCautelarBuscaRealizada"><option value="">Selecione</option><option value="Sim" ${item?.cautelarBuscaRealizada==='Sim'?'selected':''}>Sim</option><option value="Não" ${item?.cautelarBuscaRealizada==='Não'?'selected':''}>Não</option></select></div>
+        <div class="field hidden" id="statusCautelarSucessoWrap"><label>A busca teve sucesso?</label><select name="cautelarBuscaSucesso" id="statusCautelarBuscaSucesso"><option value="">Selecione</option><option value="Sim" ${item?.cautelarBuscaSucesso==='Sim'?'selected':''}>Sim</option><option value="Não" ${item?.cautelarBuscaSucesso==='Não'?'selected':''}>Não</option></select></div>
         <div class="field full"><label>Link da pasta do caso no Google Drive (opcional)</label><input type="url" name="driveUrl" placeholder="https://drive.google.com/drive/folders/..." value="${esc(item?.driveUrl||'')}"></div>${item?.driveUrl?'<div class="field full">'+driveButton(item.driveUrl)+'</div>':''}<div class="field"><label>Data do acompanhamento</label><input type="date" name="data" value="${esc(item?.data||todayISO())}" required></div>
         <div class="field full"><label>Providências — marque o que foi realizado</label><div id="statusTaskList" class="status-task-grid"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><input id="statusNewTask" style="flex:1;min-width:180px" maxlength="600" placeholder="Ex.: ouvir testemunha, solicitar laudo..."><input id="statusNewTaskDate" type="date" value="${todayISO()}" title="Data da providência" aria-label="Data da providência"><button type="button" class="btn secondary" id="statusAddTask">+ Adicionar</button></div>
@@ -409,6 +416,17 @@
         <div class="field full"><label>O que falta fazer — observações gerais</label><textarea name="falta" rows="3" placeholder="Outras pendências ou observações...">${esc(item?.falta||'')}</textarea></div>
         <div class="field full" style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn secondary" type="button" id="cancelStatusIp">Cancelar</button>${item?'<button class="btn danger" type="button" id="deleteStatusIp">Excluir IP</button>':''}<button class="btn primary" type="submit">Salvar STATUS</button></div>
       </form>`);
+      function updateCautelarFields(){
+        const status=$('#statusCautelarStatus').value,decisao=$('#statusCautelarDecisao').value;
+        const isBusca=/\bbusca\b/i.test($('#statusCautelarDescricao').value);
+        $('#statusCautelarDecisaoWrap').classList.toggle('hidden',status!=='Respondido');
+        $('#statusCautelarReanaliseWrap').classList.toggle('hidden',status!=='Respondido'||decisao!=='Indeferido');
+        $('#statusCautelarBuscaWrap').classList.toggle('hidden',!isBusca);
+        $('#statusCautelarSucessoWrap').classList.toggle('hidden',!isBusca||$('#statusCautelarBuscaRealizada').value!=='Sim');
+      }
+      ['statusCautelarStatus','statusCautelarDecisao','statusCautelarBuscaRealizada'].forEach(k=>$('#'+k).addEventListener('change',updateCautelarFields));
+      $('#statusCautelarDescricao').addEventListener('input',updateCautelarFields);
+      updateCautelarFields();
       function drawTasks(){
         $('#statusTaskList').innerHTML=tasks.length?tasks.map((t,i)=>`
           <article class="status-providence-card ${t.feito?'is-done':''}" data-task-idx="${i}">
@@ -451,7 +469,12 @@
         const form=new FormData(e.currentTarget),ip=String(form.get('ip')||'').trim();if(!ip)return;
         const all=getStatusIps().slice();
         if(all.some(x=>x.ip.toLowerCase()===ip.toLowerCase()&&x.id!==id)){toast('Este IP já está cadastrado na aba STATUS.');return}
-        const obj={id:item?.id||uid(),ip,referencia:String(form.get('referencia')||'').trim(),driveUrl:String(form.get('driveUrl')||'').trim(),data:String(form.get('data')||todayISO()),atividades:tasks,history:[...(item?.history||[]),{at:new Date().toISOString(),text:statusChangeSummary(item,form,tasks)}],feito:String(form.get('feito')||'').trim(),falta:String(form.get('falta')||'').trim(),createdAt:item?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+        const cautelarDescricao=String(form.get('cautelarDescricao')||'').trim();
+        const cautelarStatus=String(form.get('cautelarStatus')||'');
+        const cautelarDecisao=cautelarStatus==='Respondido'?String(form.get('cautelarDecisao')||''):'';
+        const isBusca=/\bbusca\b/i.test(cautelarDescricao);
+        const cautelarBuscaRealizada=isBusca?String(form.get('cautelarBuscaRealizada')||''):'';
+        const obj={id:item?.id||uid(),ip,cautelarNumero:String(form.get('cautelarNumero')||'').trim(),cautelarDescricao,cautelarStatus,cautelarDecisao,cautelarReanalise:cautelarDecisao==='Indeferido'?String(form.get('cautelarReanalise')||''):'',cautelarBuscaRealizada,cautelarBuscaSucesso:cautelarBuscaRealizada==='Sim'?String(form.get('cautelarBuscaSucesso')||''):'',referencia:String(form.get('referencia')||'').trim(),driveUrl:String(form.get('driveUrl')||'').trim(),data:String(form.get('data')||todayISO()),atividades:tasks,history:[...(item?.history||[]),{at:new Date().toISOString(),text:statusChangeSummary(item,form,tasks)}],feito:String(form.get('feito')||'').trim(),falta:String(form.get('falta')||'').trim(),createdAt:item?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
         const pos=all.findIndex(x=>x.id===id);if(pos>=0)all[pos]=obj;else all.push(obj);
         settings.statusIps=all;save();closeModal();toast(item?'STATUS atualizado.':'IP adicionado ao STATUS.');
       };
@@ -472,7 +495,7 @@
           entries.push({kind:'registro',id:r.id,title:r.type==='ip'?'IP '+r.ip:r.description,desc:r.situation||r.description})
       });
       if(kind==='todos'||kind==='status')getStatusIps().forEach(r=>{
-        if([r.ip,r.referencia,r.feito,r.falta,r.driveUrl,...(r.atividades||[]).map(x=>x.texto||x.text),...(r.history||[]).map(h=>h.text)].join(' ').toLowerCase().includes(q))
+        if([r.ip,r.referencia,r.feito,r.falta,r.driveUrl,r.cautelarNumero,r.cautelarDescricao,r.cautelarStatus,r.cautelarDecisao,...(r.atividades||[]).map(x=>x.texto||x.text),...(r.history||[]).map(h=>h.text)].join(' ').toLowerCase().includes(q))
           entries.push({kind:'status',id:r.id,title:'STATUS — IP '+r.ip,desc:r.referencia||r.falta})
       });
       if(kind==='todos'||kind==='oficios')oficios.forEach(r=>{
