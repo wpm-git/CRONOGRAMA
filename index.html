@@ -455,6 +455,8 @@
           <div class="field" id="procDeadlineWrap"><label>Prazo de resposta (dias)</label><input id="procDeadline" type="number" min="1" max="3650"></div>
           <div class="field" id="procDeadlineTypeWrap"><label>Contagem do prazo</label><select id="procDeadlineType"><option value="corridos">Dias corridos</option><option value="uteis">Dias úteis (sem feriados)</option></select></div>
           <div class="field" id="procPriorityWrap"><label>Prioridade</label><select id="procPriority"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></div>
+          <div class="field" id="procBankNumberWrap"><label>Número da cooperação técnica</label><input id="procBankNumber" maxlength="150"></div>
+          <div class="field full" id="procBankPeopleWrap"><label>Investigados vinculados à cautelar bancária</label><textarea id="procBankPeople" maxlength="3000" rows="2"></textarea></div>
           <div class="field" id="procSearchWrap"><label>Busca realizada?</label><select id="procSearch"><option value="">Não informado</option><option value="nao">Não</option><option value="sim">Sim</option></select></div>
           <div class="field" id="procSearchResultWrap"><label>Resultado da busca</label><select id="procSearchResult"><option value="">Não informado</option><option value="positivo">Positivo</option><option value="negativo">Negativo</option></select></div>
         </div>
@@ -478,10 +480,13 @@
         $('#procDeadlineTypeWrap').classList.toggle('hidden',a!=='oficio');
         $('#procPriorityWrap').classList.toggle('hidden',a!=='providencia');
         $('#procSearchWrap').classList.toggle('hidden',!['cautelar','cautelar_atualizar'].includes(a));
+        const bankType=['cautelar','cautelar_atualizar'].includes(a)&&isBankSecrecyCautelar($('#procDescription').value);
+        $('#procBankNumberWrap').classList.toggle('hidden',!bankType);
+        $('#procBankPeopleWrap').classList.toggle('hidden',!bankType);
         $('#procSearchResultWrap').classList.toggle('hidden',!['cautelar','cautelar_atualizar'].includes(a));
         $('#procDescriptionLabel').textContent=a==='cautelar'?'Número e descrição da cautelar':a==='oficio'?'Número e descrição do ofício':'Descrição / informação';
       }
-      $('#procAction').onchange=changeAction;changeAction();
+      $('#procAction').onchange=changeAction;$('#procDescription').addEventListener('input',changeAction);changeAction();
       $('#procCancel').onclick=closeModal;
       $('#procSave').onclick=()=>{
         const a=$('#procAction').value,description=$('#procDescription').value.trim(),related=$('#procLinked').value;
@@ -493,6 +498,7 @@
         const number=$('#procNumber').value.trim(),deadline=Number($('#procDeadline').value||0),deadlineType=$('#procDeadlineType').value,priority=$('#procPriority').value,searchDone=$('#procSearch').value,searchResult=$('#procSearchResult').value;
         if(['cautelar','oficio'].includes(a)&&!number){toast('Informe o número do registro.');return}
         if(a==='resposta'&&!['Positivo','Negativo','Parcial','Integral'].includes(result)){toast('Selecione um resultado de resposta válido.');return}
+        const bankNumber=$('#procBankNumber').value.trim(),bankPeople=$('#procBankPeople').value.trim();
         const now=new Date().toISOString();
         const event={id:uid(),type:a,description,date,result,documentUrl,user,relatedId:related||null,at:now};
         if(a==='cautelar'){
@@ -500,11 +506,11 @@
           const parts=description.split(/\s+[-–:]\s+/,2);
           const numero=number;
           if(ip.cautelares.some(c=>String(c.numero).toLowerCase()===numero.toLowerCase())){toast('Cautelar já cadastrada neste IP. Utilize Atualizar cautelar.');return}
-          ip.cautelares.push({id:uid(),numero,descricao:description,status:'Aguardando decisão',buscaRealizada:searchDone,buscaResultado:searchDone==='sim'?searchResult:'',createdAt:now});
+          ip.cautelares.push({id:uid(),numero,descricao:description,status:'Aguardando decisão',cooperacaoTecnica:isBankSecrecyCautelar(description)?bankNumber:'',investigados:isBankSecrecyCautelar(description)?bankPeople:'',buscaRealizada:searchDone,buscaResultado:searchDone==='sim'?searchResult:'',createdAt:now});
         }
         if(a==='cautelar_atualizar'){
           let c=(ip.cautelares||[]).find(c=>c.id===related);if(related==='legacy'){c={id:uid(),numero:ip.cautelarNumero,descricao:ip.cautelarDescricao,status:ip.cautelarStatus||'',createdAt:ip.createdAt};if(!Array.isArray(ip.cautelares))ip.cautelares=[];ip.cautelares.push(c);ip.cautelarNumero='';ip.cautelarDescricao=''}if(!c)return;
-          c.status=result||c.status;c.buscaRealizada=searchDone||c.buscaRealizada||'';c.buscaResultado=searchDone==='sim'?searchResult:(searchDone==='nao'?'':c.buscaResultado||'');c.updatedAt=now;
+          c.status=result||c.status;if(isBankSecrecyCautelar(description)){c.cooperacaoTecnica=bankNumber||c.cooperacaoTecnica||'';c.investigados=bankPeople||c.investigados||'';}c.buscaRealizada=searchDone||c.buscaRealizada||'';c.buscaResultado=searchDone==='sim'?searchResult:(searchDone==='nao'?'':c.buscaResultado||'');c.updatedAt=now;
         }
         if(a==='providencia'){if(!Array.isArray(ip.atividades))ip.atividades=[];ip.atividades.push({id:uid(),texto:description,data:date,feito:false,concluidoEm:null,prioridade:priority,responsavel:user})}
         if(a==='concluir'){const t=(ip.atividades||[]).find(t=>t.id===related);if(!t)return;t.feito=true;t.concluidoEm=date}
@@ -566,7 +572,7 @@
         <div class="field full"><label>Providências — marque o que foi realizado</label><div id="statusTaskList" class="status-task-grid"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><input id="statusNewTask" style="flex:1;min-width:180px" maxlength="600" placeholder="Ex.: ouvir testemunha, solicitar laudo..."><input id="statusNewTaskDate" type="date" value="${todayISO()}" title="Data da providência" aria-label="Data da providência"><button type="button" class="btn secondary" id="statusAddTask">+ Adicionar</button></div>
         <small style="color:var(--muted)">Cada providência possui uma data. Ao marcar, a conclusão fica registrada; desmarque para voltar a pendente.</small></div>
-        ${item?'<div class="field full"><label>Cautelares vinculadas</label><div class="cards">'+(item.cautelares||[]).map(c=>'<div class="detail"><strong>'+esc(c.numero||'Sem número')+'</strong><p>'+esc(c.descricao||'')+'</p><small>Situação: '+esc(c.status||'Não informada')+'</small></div>').join('')+(item.cautelarNumero?'<div class="detail">'+esc(item.cautelarNumero)+' — '+esc(item.cautelarDescricao||'')+'</div>':'')+'</div></div>':''}
+        ${item?'<div class="field full"><label>Cautelares vinculadas</label><div class="cards">'+(item.cautelares||[]).map(c=>'<div class="detail"><strong>'+esc(c.numero||'Sem número')+'</strong><p>'+esc(c.descricao||'')+'</p><small>Situação: '+esc(c.status||'Não informada')+'</small>'+(c.cooperacaoTecnica?'<p>Cooperação técnica: '+esc(c.cooperacaoTecnica)+'</p>':'')+(c.investigados?'<p>Investigados: '+esc(c.investigados)+'</p>':'')+'</div>').join('')+(item.cautelarNumero?'<div class="detail">'+esc(item.cautelarNumero)+' — '+esc(item.cautelarDescricao||'')+(item.cautelarCooperacaoTecnica?'<p>Cooperação técnica: '+esc(item.cautelarCooperacaoTecnica)+'</p>':'')+(item.cautelarInvestigados?'<p>Investigados: '+esc(item.cautelarInvestigados)+'</p>':'')+'</div>':'')+'</div></div>':''}
         ${item?'<div class="field full"><label>Ofícios vinculados</label><div class="cards">'+oficios.filter(o=>normalizeProcedureIp(o.ipVinculado)===normalizeProcedureIp(item.ip)).map(o=>'<div class="detail"><strong>'+esc(o.nome)+'</strong><p>'+esc(o.descricao||'')+'</p><small>'+esc(ofStatus[o.status]||o.status)+' · '+esc(o.resultado||'Sem resultado')+'</small></div>').join('')+'</div></div>':''}
         ${item?.movimentacoes?.length?'<div class="field full"><label>Atualizações incrementais</label><div class="timeline">'+item.movimentacoes.slice().reverse().map(m=>'<div class="event"><div class="event-time">'+esc(new Date(m.at).toLocaleString('pt-BR'))+' · '+esc(m.user||'Não identificado')+'</div><div class="event-text">'+esc(m.type+': '+m.description)+(m.documentUrl?' · '+driveButton(m.documentUrl):'')+'</div></div>').join('')+'</div></div>':''}
         ${item?.history?.length?'<div class="field full"><label>Histórico do STATUS</label><div class="timeline">'+item.history.slice().reverse().map(h=>'<div class="event"><div class="event-time">'+esc(new Date(h.at).toLocaleString('pt-BR'))+'</div><div class="event-text">'+esc(h.text)+'</div></div>').join('')+'</div></div>':''}<div class="field full"><label>O que já foi feito — observações gerais</label><textarea name="feito" rows="3" placeholder="Outras informações sobre as providências realizadas...">${esc(item?.feito||'')}</textarea></div>
