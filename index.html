@@ -279,7 +279,7 @@
     function ofISO(iso){if(!iso)return '';const d=new Date(iso);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
     function ofDue(o){
       if(o.status!=='enviado'||!o.prazoDias||Number(o.prazoDias)<1)return null;
-      const last=(o.reiteracoes||[]).slice(-1)[0],start=last?last.data:(o.prazoInicio||ofISO(o.sentAt));
+      const last=(o.reiteracoes||[]).slice(-1)[0],start=last?(last.data||last.date):(o.prazoInicio||ofISO(o.sentAt));
       if(!start)return null;const d=new Date(start+'T12:00:00');if(isNaN(d.getTime()))return null;
       let remaining=Number(o.prazoDias);
       while(remaining>0){d.setDate(d.getDate()+1);if(o.prazoTipo!=='uteis'||(d.getDay()!==0&&d.getDay()!==6))remaining--}
@@ -458,8 +458,9 @@
         const cautelares=Array.isArray(ip.cautelares)?ip.cautelares:[];
         const tasks=Array.isArray(ip.atividades)?ip.atividades:[];
         let options=[];
-        if(['resposta','reiteracao'].includes(a))options=linked.map(o=>[o.id,o.nome]);
-        if(a==='cautelar_atualizar')options=cautelares.map(c=>[c.id,c.numero||c.descricao]);
+        if(a==='resposta')options=linked.filter(o=>o.status!=='respondido').map(o=>[o.id,o.nome]);
+        if(a==='reiteracao')options=linked.filter(o=>o.status==='enviado').map(o=>[o.id,o.nome]);
+        if(a==='cautelar_atualizar')options=[...cautelares.map(c=>[c.id,c.numero||c.descricao]),...(ip.cautelarNumero?[['legacy',ip.cautelarNumero]]:[])];
         if(a==='concluir')options=tasks.filter(t=>!t.feito).map(t=>[t.id,t.texto]);
         $('#procLinkedWrap').classList.toggle('hidden',!['resposta','reiteracao','cautelar_atualizar','concluir'].includes(a));
         select.innerHTML=options.map(([v,t])=>'<option value="'+esc(v)+'">'+esc(t)+'</option>').join('');
@@ -485,7 +486,7 @@
           ip.cautelares.push({id:uid(),numero,descricao:description,status:'Aguardando decisão',createdAt:now});
         }
         if(a==='cautelar_atualizar'){
-          const c=(ip.cautelares||[]).find(c=>c.id===related);if(!c)return;
+          let c=(ip.cautelares||[]).find(c=>c.id===related);if(related==='legacy'){c={id:uid(),numero:ip.cautelarNumero,descricao:ip.cautelarDescricao,status:ip.cautelarStatus||'',createdAt:ip.createdAt};if(!Array.isArray(ip.cautelares))ip.cautelares=[];ip.cautelares.push(c);ip.cautelarNumero='';ip.cautelarDescricao=''}if(!c)return;
           c.status=result||c.status;c.updatedAt=now;
         }
         if(a==='providencia'){if(!Array.isArray(ip.atividades))ip.atividades=[];ip.atividades.push({id:uid(),texto:description,data:date,feito:false,concluidoEm:null})}
@@ -501,19 +502,20 @@
           if(!Array.isArray(o.respostas))o.respostas=[];
           o.respostas.push({id:event.id,at:now,date,result,description,documentUrl,user});
           o.status=result==='Parcial'?'enviado':'respondido';
-          o.resposta=description;o.resultado=result==='Negativo'?'negativo':'positivo';o.updatedAt=now;
+          o.resposta=description;o.resultado=result==='Parcial'?'parcial':result==='Negativo'?'negativo':'positivo';o.updatedAt=now;
           saveOficios();
         }
         if(a==='reiteracao'){
           const o=oficios.find(o=>o.id===related);if(!o)return;
           if(!Array.isArray(o.reiteracoes))o.reiteracoes=[];
-          o.reiteracoes.push({id:event.id,date,description,documentUrl,user,at:now});
+          o.reiteracoes.push({id:event.id,data:date,date,description,documentUrl,user,at:now,prazoDias:o.prazoDias,prazoTipo:o.prazoTipo});
           o.updatedAt=now;saveOficios();
         }
+        if(a==='documento'&&!documentUrl){toast('Informe o link HTTPS do documento.');return}
         if(!Array.isArray(ip.movimentacoes))ip.movimentacoes=[];
         ip.movimentacoes.push(event);
         if(!Array.isArray(ip.history))ip.history=[];
-        ip.history.push({at:now,text:actions.find(x=>x[0]===a)[1]+': '+(description||'Concluída')+(result?' — '+result:''),user,source:'procedimento',sourceId:event.id});
+        ip.history.push({at:now,text:actions.find(x=>x[0]===a)[1]+': '+(description||'Concluída')+(result?' — '+result:'')+(documentUrl?' · Documento: '+documentUrl:''),user,source:'procedimento',sourceId:event.id});
         ip.updatedAt=now;settings.statusIps=getStatusIps().slice();save();closeModal();toast('Atualização vinculada ao IP '+ip.ip+'.');
       };
     }
