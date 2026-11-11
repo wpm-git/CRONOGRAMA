@@ -433,11 +433,92 @@
       }).join(''):'<div class="empty">Nenhum IP cadastrado nesta aba.</div>';
       target.querySelectorAll('.reference-link').forEach(a=>a.onclick=e=>e.stopPropagation()); target.querySelectorAll('[data-status-open]').forEach(el=>{const open=()=>openStatusIp(el.dataset.statusOpen);el.onclick=open;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}}});
     }
+
+    // Atualizações incrementais: todos os eventos permanecem vinculados ao mesmo IP.
+    function normalizeProcedureIp(value){return String(value||'').trim().replace(/\s+/g,'').toUpperCase()}
+    function updateProcedure(id){
+      const ip=getStatusIps().find(x=>x.id===id);if(!ip)return;
+      const actions=[['cautelar','Adicionar nova cautelar'],['cautelar_atualizar','Atualizar cautelar'],['oficio','Adicionar novo ofício'],['resposta','Registrar resposta de ofício'],['reiteracao','Registrar reiteração'],['providencia','Adicionar providência'],['concluir','Concluir providência'],['documento','Adicionar documento ou link'],['observacao','Adicionar observação']];
+      const linked=oficios.filter(o=>normalizeProcedureIp(o.ipVinculado)===normalizeProcedureIp(ip.ip));
+      const events=Array.isArray(ip.movimentacoes)?ip.movimentacoes:[];
+      modal('Atualizar procedimento — IP '+esc(ip.ip),`
+        <div class="field"><label>Operação</label><select id="procAction">${actions.map(([v,t])=>'<option value="'+v+'">'+t+'</option>').join('')}</select></div>
+        <div class="field" id="procLinkedWrap" style="margin-top:12px"><label>Registro relacionado</label><select id="procLinked"></select></div>
+        <div class="field" style="margin-top:12px"><label id="procDescriptionLabel">Descrição / informação</label><textarea id="procDescription" maxlength="4000" rows="4" placeholder="Descreva a atualização"></textarea></div>
+        <div class="form-grid" style="margin-top:12px"><div class="field"><label>Data do fato ou recebimento</label><input id="procDate" type="date" value="${todayISO()}"></div><div class="field"><label>Resultado</label><select id="procResult"><option value="">Não informado</option><option>Positivo</option><option>Negativo</option><option>Parcial</option><option>Integral</option><option>Deferido</option><option>Indeferido</option><option>Cumprido</option><option>Não cumprido</option></select></div></div>
+        <div class="field" style="margin-top:12px"><label>Link do documento (opcional)</label><input id="procDocument" type="url" placeholder="https://drive.google.com/..."></div>
+        <div class="field" style="margin-top:12px"><label>Responsável pela atualização</label><input id="procUser" maxlength="120" value="${esc(settings.name||'')}" placeholder="Identificação do responsável"></div>
+        <div class="modal-foot" style="padding:14px 0 0"><button type="button" class="btn secondary" id="procCancel">Cancelar</button><button type="button" class="btn primary" id="procSave">Salvar atualização</button></div>
+        ${events.length?'<h4>Últimas atualizações</h4><div class="timeline">'+events.slice(-10).reverse().map(e=>'<div class="event"><div class="event-time">'+esc(new Date(e.at).toLocaleString('pt-BR'))+' · '+esc(e.user||'Não identificado')+'</div><div class="event-text">'+esc(e.type+': '+e.description)+'</div></div>').join('')+'</div>':''}`);
+      function changeAction(){
+        const a=$('#procAction').value,select=$('#procLinked');
+        const cautelares=Array.isArray(ip.cautelares)?ip.cautelares:[];
+        const tasks=Array.isArray(ip.atividades)?ip.atividades:[];
+        let options=[];
+        if(['resposta','reiteracao'].includes(a))options=linked.map(o=>[o.id,o.nome]);
+        if(a==='cautelar_atualizar')options=cautelares.map(c=>[c.id,c.numero||c.descricao]);
+        if(a==='concluir')options=tasks.filter(t=>!t.feito).map(t=>[t.id,t.texto]);
+        $('#procLinkedWrap').classList.toggle('hidden',!['resposta','reiteracao','cautelar_atualizar','concluir'].includes(a));
+        select.innerHTML=options.map(([v,t])=>'<option value="'+esc(v)+'">'+esc(t)+'</option>').join('');
+        $('#procSave').disabled=$('#procLinkedWrap').classList.contains('hidden')?false:!options.length;
+        $('#procDescriptionLabel').textContent=a==='cautelar'?'Número e descrição da cautelar':a==='oficio'?'Número e descrição do ofício':'Descrição / informação';
+      }
+      $('#procAction').onchange=changeAction;changeAction();
+      $('#procCancel').onclick=closeModal;
+      $('#procSave').onclick=()=>{
+        const a=$('#procAction').value,description=$('#procDescription').value.trim(),related=$('#procLinked').value;
+        const date=$('#procDate').value,result=$('#procResult').value,documentUrl=$('#procDocument').value.trim(),user=$('#procUser').value.trim();
+        if(!date||!user){toast('Informe a data e o responsável.');return}
+        if(!description&&!['concluir'].includes(a)){toast('Descreva a atualização.');return}
+        if(documentUrl&&!/^https:\/\//i.test(documentUrl)){toast('Informe um link HTTPS válido.');return}
+        if(['resposta','reiteracao','cautelar_atualizar','concluir'].includes(a)&&!related){toast('Selecione um registro relacionado.');return}
+        const now=new Date().toISOString();
+        const event={id:uid(),type:a,description,date,result,documentUrl,user,relatedId:related||null,at:now};
+        if(a==='cautelar'){
+          if(!Array.isArray(ip.cautelares))ip.cautelares=[];
+          const parts=description.split(/\s+[-–:]\s+/,2);
+          const numero=parts.length>1?parts[0]:description;
+          if(ip.cautelares.some(c=>String(c.numero).toLowerCase()===numero.toLowerCase())){toast('Cautelar já cadastrada neste IP. Utilize Atualizar cautelar.');return}
+          ip.cautelares.push({id:uid(),numero,descricao:description,status:'Aguardando decisão',createdAt:now});
+        }
+        if(a==='cautelar_atualizar'){
+          const c=(ip.cautelares||[]).find(c=>c.id===related);if(!c)return;
+          c.status=result||c.status;c.updatedAt=now;
+        }
+        if(a==='providencia'){if(!Array.isArray(ip.atividades))ip.atividades=[];ip.atividades.push({id:uid(),texto:description,data:date,feito:false,concluidoEm:null})}
+        if(a==='concluir'){const t=(ip.atividades||[]).find(t=>t.id===related);if(!t)return;t.feito=true;t.concluidoEm=date}
+        if(a==='oficio'){
+          const numero=description.split(/\s+[-–:]\s+/,2)[0];
+          if(oficios.some(o=>normalizeProcedureIp(o.ipVinculado)===normalizeProcedureIp(ip.ip)&&o.nome.toLowerCase()===numero.toLowerCase())){toast('Ofício já cadastrado para este IP.');return}
+          oficios.push({id:uid(),nome:numero,descricao:description,ipVinculado:ip.ip,status:'aguardando',createdAt:now,updatedAt:now});
+          saveOficios();
+        }
+        if(a==='resposta'){
+          const o=oficios.find(o=>o.id===related);if(!o)return;
+          if(!Array.isArray(o.respostas))o.respostas=[];
+          o.respostas.push({id:event.id,at:now,date,result,description,documentUrl,user});
+          o.status=result==='Parcial'?'enviado':'respondido';
+          o.resposta=description;o.resultado=result==='Negativo'?'negativo':'positivo';o.updatedAt=now;
+          saveOficios();
+        }
+        if(a==='reiteracao'){
+          const o=oficios.find(o=>o.id===related);if(!o)return;
+          if(!Array.isArray(o.reiteracoes))o.reiteracoes=[];
+          o.reiteracoes.push({id:event.id,date,description,documentUrl,user,at:now});
+          o.updatedAt=now;saveOficios();
+        }
+        if(!Array.isArray(ip.movimentacoes))ip.movimentacoes=[];
+        ip.movimentacoes.push(event);
+        if(!Array.isArray(ip.history))ip.history=[];
+        ip.history.push({at:now,text:actions.find(x=>x[0]===a)[1]+': '+(description||'Concluída')+(result?' — '+result:''),user,source:'procedimento',sourceId:event.id});
+        ip.updatedAt=now;settings.statusIps=getStatusIps().slice();save();closeModal();toast('Atualização vinculada ao IP '+ip.ip+'.');
+      };
+    }
     function openStatusIp(id=null){
       const item=id?getStatusIps().find(x=>x.id===id):null;
       let editingTask=-1;
       let tasks=(Array.isArray(item?.atividades)?item.atividades:[]).map(t=>({...t}));
-      modal(item?'STATUS — IP '+esc(item.ip):'Adicionar IP',`<form id="statusIpForm" class="form-grid">
+      modal(item?'STATUS — IP '+esc(item.ip):'Adicionar IP',`${item?'<div style="padding-bottom:14px"><button type="button" class="btn primary" id="updateProcedureButton">+ Atualizar procedimento</button></div>':''}<form id="statusIpForm" class="form-grid">
         <div class="field"><label>Número do IP</label><input name="ip" maxlength="100" required placeholder="Ex.: 123456/2026" value="${esc(item?.ip||'')}"></div>
         <div class="field"><label>Referência (opcional)</label><input name="referencia" maxlength="180" placeholder="Nome da pessoa ou crime" value="${esc(item?.referencia||'')}"></div>
         <div class="field"><label>Número da cautelar (opcional)</label><input name="cautelarNumero" maxlength="120" placeholder="Ex.: 0001234-56.2026.8.16.0000" value="${esc(item?.cautelarNumero||'')}"></div>
@@ -455,6 +536,7 @@
         <div class="field full"><label>O que falta fazer — observações gerais</label><textarea name="falta" rows="3" placeholder="Outras pendências ou observações...">${esc(item?.falta||'')}</textarea></div>
         <div class="field full" style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn secondary" type="button" id="cancelStatusIp">Cancelar</button>${item?'<button class="btn danger" type="button" id="deleteStatusIp">Excluir IP</button>':''}<button class="btn primary" type="submit">Salvar STATUS</button></div>
       </form>`);
+      if(item)$('#updateProcedureButton').onclick=()=>updateProcedure(item.id);
       function updateCautelarFields(){
         const status=$('#statusCautelarStatus').value,decisao=$('#statusCautelarDecisao').value;
         const isBusca=/\bbusca\b/i.test($('#statusCautelarDescricao').value);
@@ -507,13 +589,13 @@
         const input=$('#statusNewTask');if(input.value.trim())addTask();
         const form=new FormData(e.currentTarget),ip=String(form.get('ip')||'').trim();if(!ip)return;
         const all=getStatusIps().slice();
-        if(all.some(x=>x.ip.toLowerCase()===ip.toLowerCase()&&x.id!==id)){toast('Este IP já está cadastrado na aba STATUS.');return}
+        const duplicate=all.find(x=>normalizeProcedureIp(x.ip)===normalizeProcedureIp(ip)&&x.id!==id);if(duplicate){if(confirm('Este inquérito policial já está cadastrado. Deseja abrir e atualizar o procedimento existente?'))updateProcedure(duplicate.id);return}
         const cautelarDescricao=String(form.get('cautelarDescricao')||'').trim();
         const cautelarStatus=String(form.get('cautelarStatus')||'');
         const cautelarDecisao=cautelarStatus==='Respondido'?String(form.get('cautelarDecisao')||''):'';
         const isBusca=/\bbusca\b/i.test(cautelarDescricao);
         const cautelarBuscaRealizada=isBusca?String(form.get('cautelarBuscaRealizada')||''):'';
-        const obj={id:item?.id||uid(),ip,cautelarNumero:String(form.get('cautelarNumero')||'').trim(),cautelarDescricao,cautelarStatus,cautelarDecisao,cautelarReanalise:cautelarDecisao==='Indeferido'?String(form.get('cautelarReanalise')||''):'',cautelarBuscaRealizada,cautelarBuscaSucesso:cautelarBuscaRealizada==='Sim'?String(form.get('cautelarBuscaSucesso')||''):'',referencia:String(form.get('referencia')||'').trim(),driveUrl:String(form.get('driveUrl')||'').trim(),data:String(form.get('data')||todayISO()),atividades:tasks,history:[...(item?.history||[]),{at:new Date().toISOString(),text:statusChangeSummary(item,form,tasks)}],feito:String(form.get('feito')||'').trim(),falta:String(form.get('falta')||'').trim(),createdAt:item?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+        const obj={id:item?.id||uid(),ip,cautelarNumero:String(form.get('cautelarNumero')||'').trim(),cautelarDescricao,cautelarStatus,cautelarDecisao,cautelarReanalise:cautelarDecisao==='Indeferido'?String(form.get('cautelarReanalise')||''):'',cautelarBuscaRealizada,cautelarBuscaSucesso:cautelarBuscaRealizada==='Sim'?String(form.get('cautelarBuscaSucesso')||''):'',referencia:String(form.get('referencia')||'').trim(),driveUrl:String(form.get('driveUrl')||'').trim(),data:String(form.get('data')||todayISO()),atividades:tasks,history:[...(item?.history||[]),{at:new Date().toISOString(),text:statusChangeSummary(item,form,tasks)}],feito:String(form.get('feito')||'').trim(),falta:String(form.get('falta')||'').trim(),cautelares:item?.cautelares||[],movimentacoes:item?.movimentacoes||[],createdAt:item?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
         const pos=all.findIndex(x=>x.id===id);if(pos>=0)all[pos]=obj;else all.push(obj);
         settings.statusIps=all;save();closeModal();toast(item?'STATUS atualizado.':'IP adicionado ao STATUS.');
       };
