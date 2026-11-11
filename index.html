@@ -276,7 +276,7 @@
     function ofResultBadge(o){return o.status==='respondido'&&['positivo','negativo'].includes(o.resultado)?` <span class="of-badge ${o.resultado}">${o.resultado==='positivo'?'Positivo':'Negativo'}</span>`:''}
     function ofDate(iso){return iso?new Date(iso).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'—'}
 
-    function ofISO(iso){if(!iso)return '';const d=new Date(iso);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+    function ofISO(iso){if(!iso)return '';if(/^\d{4}-\d{2}-\d{2}$/.test(String(iso)))return String(iso);const d=new Date(iso);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
     function ofDue(o){
       if(o.status!=='enviado'||!o.prazoDias||Number(o.prazoDias)<1)return null;
       const last=(o.reiteracoes||[]).slice(-1)[0],start=last?(last.data||last.date):(o.prazoInicio||ofISO(o.sentAt));
@@ -410,7 +410,7 @@
         if(Boolean(o.feito)!==Boolean(t.feito))changes.push((t.feito?'Concluída: ':'Reaberta: ')+t.texto);
       }});
       prior.forEach(t=>{if(!newMap.has(t.id))changes.push('Providência removida: '+t.texto)});
-      for(const key of ['referencia','feito','falta','driveUrl','cautelarNumero','cautelarDescricao','cautelarStatus','cautelarDecisao','cautelarReanalise','cautelarBuscaRealizada','cautelarBuscaSucesso']){
+      for(const key of ['bou','processoJudicial','natureza','instauracao','responsavel','situacaoIp','referencia','feito','falta','driveUrl','cautelarNumero','cautelarDescricao','cautelarStatus','cautelarDecisao','cautelarReanalise','cautelarBuscaRealizada','cautelarBuscaSucesso']){
         if(String(old[key]||'')!==String(form.get(key)||''))changes.push('Campo '+key+' atualizado');
       }
       if(String(old.ip)!==String(form.get('ip')))changes.push('Número do IP alterado');
@@ -492,7 +492,7 @@
         if(['resposta','reiteracao','cautelar_atualizar','concluir'].includes(a)&&!related){toast('Selecione um registro relacionado.');return}
         const number=$('#procNumber').value.trim(),deadline=Number($('#procDeadline').value||0),deadlineType=$('#procDeadlineType').value,priority=$('#procPriority').value,searchDone=$('#procSearch').value,searchResult=$('#procSearchResult').value;
         if(['cautelar','oficio'].includes(a)&&!number){toast('Informe o número do registro.');return}
-        if(a==='resposta'&&!result){toast('Informe se a resposta é parcial, positiva, negativa ou integral.');return}
+        if(a==='resposta'&&!['Positivo','Negativo','Parcial','Integral'].includes(result)){toast('Selecione um resultado de resposta válido.');return}
         const now=new Date().toISOString();
         const event={id:uid(),type:a,description,date,result,documentUrl,user,relatedId:related||null,at:now};
         if(a==='cautelar'){
@@ -519,7 +519,7 @@
           if(!Array.isArray(o.respostas))o.respostas=[];
           o.respostas.push({id:event.id,at:now,date,result,description,documentUrl,user});
           o.status=result==='Parcial'?'enviado':'respondido';
-          o.resposta=description;o.resultado=result==='Parcial'?'parcial':result==='Negativo'?'negativo':'positivo';o.updatedAt=now;
+          o.resposta=description;o.resultado=result==='Parcial'?'parcial':result==='Negativo'?'negativo':'positivo';o.answeredAt=result==='Parcial'?null:now;o.updatedAt=now;
           saveOficios();
         }
         if(a==='reiteracao'){
