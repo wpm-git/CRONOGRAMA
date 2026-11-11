@@ -296,18 +296,48 @@
       const lastSent=oficios.filter(o=>o.sentAt||o.status==='enviado').sort((a,b)=>String(b.sentAt||b.updatedAt||b.createdAt).localeCompare(String(a.sentAt||a.updatedAt||a.createdAt)))[0];
       $('#ofLatest').innerHTML=lastSent?`<h3>📤 Último ofício enviado</h3><div class="of-latest-line"><strong>${esc(lastSent.nome)}</strong><span class="of-badge enviado">Enviado</span></div>`:'';
       const q=$('#searchOficios').value.trim().toLowerCase(),filter=$('#filterOficios').value;
-      const data=oficios.filter(o=>(filter==='todos'||(filter==='vencido'?ofDue(o)?.days<0:o.status===filter))&&[o.nome,o.descricao].join(' ').toLowerCase().includes(q)).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+      const data=oficios.filter(o=>(filter==='todos'||(filter==='vencido'?ofDue(o)?.days<0:o.status===filter))&&[o.nome,o.ipVinculado,o.descricao].join(' ').toLowerCase().includes(q)).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
       $('#oficiosCards').innerHTML=data.length?data.map(ofCard).join(''):empty('Nenhum ofício encontrado.');
       $$('[data-of-edit]').forEach(b=>b.onclick=()=>formOficio(b.dataset.ofEdit));
       document.querySelectorAll('[data-of-delete]').forEach(b=>b.onclick=()=>deleteOficio(b.dataset.ofDelete));
       document.querySelectorAll('[data-of-reit]').forEach(b=>b.onclick=()=>reiterateOficio(b.dataset.ofReit));
     }
+    // Vincula movimentações de ofícios a um IP existente em STATUS.
+    function oficioIpKey(value){return String(value||'').trim().replace(/\s+/g,'').toLowerCase()}
+    function findStatusForOficio(ip){
+      if(!ip)return null;
+      return getStatusIps().find(x=>oficioIpKey(x.ip)===oficioIpKey(ip))||null;
+    }
+    function syncOficioStatusHistory(oficio,previous){
+      const ip=findStatusForOficio(oficio.ipVinculado);
+      if(!ip)return false;
+      const before=previous||{};
+      const events=[];
+      const number=oficio.nome||'Ofício sem número';
+      if(oficio.status==='enviado'&&(before.status!=='enviado'||oficioIpKey(before.ipVinculado)!==oficioIpKey(oficio.ipVinculado))){
+        events.push({kind:'enviado',text:'Ofício enviado: '+number+(oficio.descricao?' — '+oficio.descricao:'')});
+      }
+      if(oficio.status==='respondido'&&(before.status!=='respondido'||before.resultado!==oficio.resultado||before.resposta!==oficio.resposta||oficioIpKey(before.ipVinculado)!==oficioIpKey(oficio.ipVinculado))){
+        events.push({kind:'respondido',text:'Ofício respondido ('+(oficio.resultado==='positivo'?'positivo':'negativo')+'): '+number+(oficio.resposta?' — '+oficio.resposta:'')});
+      }
+      if(!events.length)return false;
+      if(!Array.isArray(ip.history))ip.history=[];
+      for(const event of events){
+        const signature=oficio.id+':'+event.kind+':'+oficio.updatedAt;
+        if(!ip.history.some(h=>h.sourceKey===signature)){
+          ip.history.push({at:new Date().toISOString(),text:event.text,source:'oficio',sourceId:oficio.id,sourceKey:signature});
+        }
+      }
+      ip.updatedAt=new Date().toISOString();
+      return true;
+    }
     function formOficio(id){
       const old=oficios.find(o=>o.id===id);
+      const ipSuggestions=getStatusIps().map(x=>'<option value="'+esc(x.ip)+'"></option>').join('');
       const options=Object.entries(ofStatus).map(([v,t])=>`<option value="${v}" ${(old?.status||'aguardando')===v?'selected':''}>${t}</option>`).join('');
       const answerFields=`<div class="field full of-answer-fields" id="ofAnswerFields" style="display:none"><label for="ofResposta">Descrição da resposta recebida</label><textarea id="ofResposta" name="resposta" placeholder="Descreva a resposta recebida...">${esc(old?.resposta||'')}</textarea><label>Resultado da resposta</label><div class="of-choice"><label><input type="radio" name="resultado" value="positivo" ${old?.resultado==='positivo'?'checked':''}> Positivo</label><label><input type="radio" name="resultado" value="negativo" ${old?.resultado==='negativo'?'checked':''}> Negativo</label></div></div>`;
       const prazoFields='<div class="field full" id="ofPrazoFields" style="display:none"><label>Prazo para resposta (dias)</label><input name="prazoDias" type="number" min="1" max="3650" step="1" value="'+esc(old?.prazoDias||'')+'" placeholder="Ex.: 10"><label>Contagem</label><select name="prazoTipo"><option value="corridos" '+(old?.prazoTipo!=='uteis'?'selected':'')+'>Dias corridos</option><option value="uteis" '+(old?.prazoTipo==='uteis'?'selected':'')+'>Dias úteis (sem feriados)</option></select><label>Data do envio</label><input type="date" name="prazoInicio" value="'+esc(old?.prazoInicio||ofISO(old?.sentAt)||ofISO(new Date().toISOString()))+'"></div>';
-      modal(old?'Editar ofício':'Novo ofício',`<form id="oficioForm" class="form-grid"><div class="field full"><label>Nome ou número do ofício</label><input name="nome" maxlength="180" required value="${esc(old?.nome||'')}" placeholder="Ex.: Ofício nº 123/2026"></div><div class="field full"><label>Descrição / assunto</label><textarea name="descricao" placeholder="Descreva do que trata o ofício...">${esc(old?.descricao||'')}</textarea></div><div class="field full"><label>Status</label><select name="status">${options}</select></div>${prazoFields}${answerFields}</form>`,`<button class="btn secondary" data-close2>Cancelar</button><button class="btn primary" id="saveOficioForm">Salvar ofício</button>`);
+      modal(old?'Editar ofício':'Novo ofício',`<form id="oficioForm" class="form-grid"><div class="field full"><label>Nome ou número do ofício</label><input name="nome" maxlength="180" required value="${esc(old?.nome||'')}" placeholder="Ex.: Ofício nº 123/2026"></div><div class="field full"><label>IP vinculado (aba STATUS)</label><input name="ipVinculado" list="oficioIpOptions" maxlength="100" placeholder="Informe o número exato do IP" value="${esc(old?.ipVinculado||'')}"><datalist id="oficioIpOptions">${ipSuggestions}</datalist><small style="color:var(--muted)">Selecione um IP já cadastrado em STATUS para registrar envio e resposta automaticamente.</small></div><div class="field full"><label>Descrição / assunto</label><textarea name="descricao" placeholder="Descreva do que trata o ofício...">${esc(old?.descricao||'')}</textarea></div><div class="field full"><label>Status</label><select name="status">${options}</select></div>${prazoFields}${answerFields}</form>`,`<button class="btn secondary" data-close2>Cancelar</button><button class="btn primary" id="saveOficioForm">Salvar ofício</button>`);
       $('[data-close2]').onclick=closeModal;
       const form=$('#oficioForm');
       const updateAnswerFields=()=>{
@@ -329,7 +359,12 @@
         const prazoInicio=newStatus==='enviado'?form.elements.prazoInicio.value:(old?.prazoInicio||'');
         if(newStatus==='enviado'&&(!Number.isInteger(prazoDias)||prazoDias<1||!prazoInicio)){toast('Informe o prazo e a data do envio.');return}
         if(newStatus==='respondido'&&(!result||!answer)){toast('Preencha a resposta e selecione Positivo ou Negativo.');return}
+        const ipDigitado=form.elements.ipVinculado.value.trim();
+        const ipEncontrado=findStatusForOficio(ipDigitado);
+        if(ipDigitado&&!ipEncontrado){toast('IP não encontrado em STATUS. Cadastre o IP nessa aba antes de vincular.');return}
+        const previous=old?{status:old.status,resultado:old.resultado,resposta:old.resposta,ipVinculado:old.ipVinculado}:null;
         if(old){
+          old.ipVinculado=ipEncontrado?.ip||'';
           if(newStatus==='enviado'&&old.status!=='enviado')old.sentAt=new Date(prazoInicio+'T12:00:00').toISOString();
           old.nome=form.elements.nome.value.trim();
           old.descricao=form.elements.descricao.value.trim();
@@ -338,9 +373,13 @@
           old.resultado=result;old.prazoDias=prazoDias;old.prazoTipo=prazoTipo;old.prazoInicio=prazoInicio;
           old.updatedAt=now;
         }else{
-          oficios.push({id:uid(),nome:form.elements.nome.value.trim(),descricao:form.elements.descricao.value.trim(),status:newStatus,resposta:answer,resultado:result,createdAt:now,updatedAt:now,answeredAt:newStatus==='respondido'?now:null,sentAt:newStatus==='enviado'?new Date(prazoInicio+'T12:00:00').toISOString():null,prazoDias,prazoTipo,prazoInicio,reiteracoes:[]});
+          oficios.push({id:uid(),ipVinculado:ipEncontrado?.ip||'',nome:form.elements.nome.value.trim(),descricao:form.elements.descricao.value.trim(),status:newStatus,resposta:answer,resultado:result,createdAt:now,updatedAt:now,answeredAt:newStatus==='respondido'?now:null,sentAt:newStatus==='enviado'?new Date(prazoInicio+'T12:00:00').toISOString():null,prazoDias,prazoTipo,prazoInicio,reiteracoes:[]});
         }
-        saveOficios();closeModal();toast('Ofício salvo com sucesso.');
+        const updated=old||oficios[oficios.length-1];
+        const didSync=syncOficioStatusHistory(updated,previous);
+        saveOficios();
+        if(didSync)save();
+        closeModal();toast(didSync?'Ofício salvo e movimentação lançada no STATUS.':'Ofício salvo com sucesso.');
       };
     }
 
@@ -499,7 +538,7 @@
           entries.push({kind:'status',id:r.id,title:'STATUS — IP '+r.ip,desc:r.referencia||r.falta})
       });
       if(kind==='todos'||kind==='oficios')oficios.forEach(r=>{
-        if([r.nome,r.descricao,r.resposta,r.status].join(' ').toLowerCase().includes(q))
+        if([r.nome,r.ipVinculado,r.descricao,r.resposta,r.status].join(' ').toLowerCase().includes(q))
           entries.push({kind:'oficio',id:r.id,title:r.nome,desc:r.descricao})
       });
       el.innerHTML=entries.length?entries.slice(0,100).map(r=>'<article class="card" style="padding:16px;margin:10px 0"><h3>'+esc(r.title||'Registro')+'</h3><p>'+esc(r.desc||'')+'</p><button class="btn secondary" data-result-id="'+esc(r.id)+'" data-result-kind="'+r.kind+'">Abrir</button></article>').join(''):'<div class="empty">Nenhum resultado.</div>';
