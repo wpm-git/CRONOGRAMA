@@ -124,7 +124,32 @@
     .status-providence-date{font-size:12px;color:var(--muted)}
     .status-providence-check{display:flex;align-items:center;gap:9px;cursor:pointer;border-top:1px solid var(--line);padding-top:12px;font-size:13px;font-weight:650}
     .status-providence-check input{width:18px;height:18px;flex:none;accent-color:var(--green)}
-  @media print{header,nav,.page:not(#relatorios),#printReport,#reportMonth,#modalRoot,#toast{display:none!important}#relatorios{display:block!important}body{background:white!important;color:black!important}} </style>
+  @media print{header,nav,.page:not(#relatorios),#printReport,#reportMonth,#modalRoot,#toast{display:none!important}#relatorios{display:block!important}body{background:white!important;color:black!important}} 
+/* TEMA CARVÃO CLARO — preserva identidade preta e dourada com melhor leitura. */
+:root{--navy:#f0cb7b;--blue:#debc72;--sky:#41434b;--bg:#272a31;--card:#373a43;--text:#f6f2e9;--muted:#d1cbc0;--line:#62616a;--gold:#f2cf83;--gold-soft:#bc9f69;--black-2:#30323a;--black-3:#3c3e47;--redbg:#473035;--amberbg:#494132;--shadow:0 6px 20px rgba(0,0,0,.23)}
+html{color-scheme:dark}
+body{background:linear-gradient(145deg,#343740,#272a31 75%)!important;color:var(--text)}
+header{background:linear-gradient(120deg,#32343c,#403e40 70%,#504739)!important;border-bottom:1px solid #997d49!important}
+nav button{color:#ede2cf!important}nav button:hover{background:#49474a!important}nav button.active{background:#3e4149!important;color:var(--gold)!important}
+.hero,.stat,.card,.settings-card,.toolbar,.modal,.type-card,.empty,.detail,.extra-card,.extra-stat,.status-providence-card,.oficio-card,.dropdown{background:var(--card)!important;border-color:var(--line)!important;color:var(--text)!important;box-shadow:var(--shadow)}
+.hero{background:linear-gradient(125deg,#474951,#373a43)!important}
+.stat{background:linear-gradient(130deg,#464850,#393c44)!important}
+.card.overdue{background:linear-gradient(90deg,#503b40,#3b3d46 25%)!important;border-left-color:var(--red)!important}
+.modal-back{background:rgba(6,7,10,.7)!important}
+.modal-head,.modal-foot,.dropdown{background:var(--card)!important}
+.field input,.field textarea,.field select,.toolbar input,.toolbar select,input,textarea,select{background:#474a54!important;color:#fff9ee!important;border-color:#81808a!important}
+input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
+.field label,.card p,.modal p,.detail,.card-description,.event-text,.status-providence-text{color:var(--text)!important}
+.secondary,.outline,.icon-btn,.dropdown button{background:#4a4c56!important;color:var(--gold)!important;border-color:#a18c65!important}
+.dropdown button:hover,.type-card:hover{background:#565861!important}
+.calc,.alert-panel,.of-late,.of-due,.backup-status{background:#4d4241!important;color:#f3e6cd!important;border-color:#a37b55!important}
+.status-providence-card.is-done{background:#344c43!important}
+.ip-people{margin:8px 0!important;padding:8px 10px;border-left:3px solid var(--gold);background:rgba(242,206,125,.10);border-radius:5px;white-space:pre-line;overflow-wrap:anywhere;font-size:13px}
+.ip-people strong{color:var(--gold)}
+.detail{white-space:pre-line;overflow-wrap:anywhere}
+.reference-link,.extra-link{color:#f7d99a!important}
+@media print{html{color-scheme:light}body{background:white!important;color:black!important}#relatorios,#relatorios *{color:black!important}}
+</style>
 </head>
 <body>
   <header>
