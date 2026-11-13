@@ -149,6 +149,11 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
 .detail{white-space:pre-line;overflow-wrap:anywhere}
 .reference-link,.extra-link{color:#f7d99a!important}
 @media print{html{color-scheme:light}body{background:white!important;color:black!important}#relatorios,#relatorios *{color:black!important}}
+
+/* Discriminação compacta dos tipos de procedimento sob o total */
+.procedimentos-breakdown{display:flex;gap:11px;align-items:center;flex-wrap:wrap;margin-top:9px;font-size:11px;line-height:1.45;letter-spacing:.02em}
+.procedimentos-breakdown span{display:inline-flex!important;align-items:center;gap:4px;color:var(--muted)!important;font-size:11px!important;white-space:nowrap}
+.procedimentos-breakdown b{color:var(--gold);font-weight:700;font-size:12px}
 </style>
 </head>
 <body>
@@ -450,7 +455,9 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       const items=getStatusIps().filter(x=>[x.ip,x.tipoProcedimento||'IP',x.referencia,x.cautelarNumero,x.cautelarDescricao,x.cautelarStatus,x.cautelarDecisao,x.bou,x.processoJudicial,x.natureza,x.vitimas,x.investigados,x.prejuizoTotal,x.numeroCooperacao,x.cautelarCooperacaoTecnica,x.cautelarInvestigados,...(x.cautelares||[]).map(c=>[c.numero,c.descricao,c.cooperacaoTecnica,c.investigados].join(' ')),...(x.movimentacoes||[]).map(m=>m.description)].join(' ').toLowerCase().includes(q)&&(filter==='todos'||(Array.isArray(x.atividades)&&x.atividades.some(t=>!t.feito))||!!String(x.falta||'').trim())).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
       const all=getStatusIps(), linked=oficios.filter(o=>all.some(x=>normalizeProcedureIp(x.ip)===normalizeProcedureIp(o.ipVinculado)));
       const summary=$('#statusSummary');if(summary){const metrics=[['Procedimentos',all.length],['Cautelares',all.reduce((n,x)=>n+(x.cautelares||[]).length+(x.cautelarNumero?1:0),0)],['Ofícios',linked.length],['Ofícios pendentes',linked.filter(o=>o.status!=='respondido').length],['Providências pendentes',all.reduce((n,x)=>n+(x.atividades||[]).filter(t=>!t.feito).length,0)]];
-      summary.innerHTML=metrics.map(([label,value])=>'<div class="stat"><span>'+label+'</span><strong>'+value+'</strong></div>').join('')}
+      const tipos={IP:0,BOU:0,BOA:0};
+      all.forEach(x=>{const tipo=x.tipoProcedimento||'IP';if(Object.prototype.hasOwnProperty.call(tipos,tipo))tipos[tipo]++});
+      summary.innerHTML=metrics.map(([label,value])=>'<div class="stat"><span>'+label+'</span><strong>'+value+'</strong>'+(label==='Procedimentos'?'<div class="procedimentos-breakdown"><span>IP <b>'+tipos.IP+'</b></span><span>BOU <b>'+tipos.BOU+'</b></span><span>BOA <b>'+tipos.BOA+'</b></span></div>':'')+'</div>').join('')}
       target.innerHTML=items.length?items.map(x=>{
         const tasks=Array.isArray(x.atividades)?x.atividades:[];
         const done=tasks.filter(t=>t.feito).length;
