@@ -508,7 +508,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       if(Array.isArray(p.cautelares))p.cautelares.forEach(c=>{if(c&&(String(c.numero||'').trim()||String(c.descricao||'').trim()))medidas.push(c)});
       if(!medidas.length)return '';
       return '<span class="cautelares-inline">'+medidas.map(c=>
-        '<span class="cautelar-inline-item"><span class="cautelar-inline-number">MC '+esc(String(c.numero||'sem número'))+'</span>'+
+        '<span class="cautelar-inline-item"><span class="cautelar-inline-number">MC: '+esc(String(c.numero||'sem número'))+'</span>'+
         (String(c.pedido||'').trim()?'<span class="cautelar-inline-description">Pedido: '+esc(String(c.pedido).trim())+'</span>':'')+'</span>'
       ).join('')+'</span>';
     }
