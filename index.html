@@ -160,6 +160,13 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     .procedure-group{margin:20px 0 25px}.procedure-group h3{font-size:17px;color:var(--gold);margin-bottom:12px}
     .procedure-help{color:var(--muted);margin-bottom:18px}
     .procedure-finished-card small{color:var(--muted)}
+
+.procedure-heading{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:16px;row-gap:7px;min-width:0}
+.procedure-heading>strong{flex-shrink:0}
+.cautelares-inline{display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:8px 14px;min-width:0}
+.cautelar-inline-item{display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:5px;max-width:100%;font-size:12px;line-height:1.5}
+.cautelar-inline-number{font-weight:700;color:var(--gold);overflow-wrap:anywhere}
+.cautelar-inline-description{font-size:11px;color:var(--muted);font-weight:400;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -494,6 +501,17 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
         save();closeModal();go('statusips');toast('Procedimento devolvido ao STATUS.');
       };
     }
+
+    function cautelaresNoTitulo(p){
+      const medidas=[];
+      if(String(p.cautelarNumero||'').trim()||String(p.cautelarDescricao||'').trim())medidas.push({numero:p.cautelarNumero,descricao:p.cautelarDescricao});
+      if(Array.isArray(p.cautelares))p.cautelares.forEach(c=>{if(c&&(String(c.numero||'').trim()||String(c.descricao||'').trim()))medidas.push(c)});
+      if(!medidas.length)return '';
+      return '<span class="cautelares-inline">'+medidas.map(c=>
+        '<span class="cautelar-inline-item"><span class="cautelar-inline-number">MC '+esc(String(c.numero||'sem número'))+'</span>'+
+        (String(c.descricao||'').trim()?'<span class="cautelar-inline-description">('+esc(String(c.descricao).trim())+')</span>':'')+'</span>'
+      ).join('')+'</span>';
+    }
     function renderConcludedProcedures(){
       const all=getStatusIps();
       const relatados=all.filter(p=>etapaDoProcedimento(p)==='relatado'&&(p.tipoProcedimento||'IP')==='IP');
@@ -506,7 +524,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       summary($('#arquivadosSummary'),arquivados,[['Total arquivados',p=>true],['IP',p=>(p.tipoProcedimento||'IP')==='IP'],['BOU',p=>p.tipoProcedimento==='BOU'],['BOA',p=>p.tipoProcedimento==='BOA']]);
       const cards=(target,groups)=>{
         if(!target)return;
-        target.innerHTML=groups.map(([title,items])=>'<div class="procedure-group"><h3>'+title+' ('+items.length+')</h3>'+(items.length?items.map(p=>'<article class="card procedure-finished-card"><div><strong>'+esc(p.tipoProcedimento||'IP')+' '+esc(p.ip)+'</strong><p>'+esc(p.referencia||p.natureza||'Sem referência')+'</p><small>Conclusão: '+esc(p.dataFinalizacao?fmt(p.dataFinalizacao):'Não informada')+' · '+esc(descricaoResultadoProcedimento(p))+'</small></div><div class="procedure-actions"><button class="btn secondary" data-procedure-view="'+esc(p.id)+'">Ver / editar</button><button class="btn outline" data-procedure-reopen="'+esc(p.id)+'">Reabrir</button></div></article>').join(''):'<p class="empty">Nenhum procedimento nesta categoria.</p>')+'</div>').join('');
+        target.innerHTML=groups.map(([title,items])=>'<div class="procedure-group"><h3>'+title+' ('+items.length+')</h3>'+(items.length?items.map(p=>'<article class="card procedure-finished-card"><div><div class="procedure-heading"><strong>'+esc(p.tipoProcedimento||'IP')+' '+esc(p.ip)+'</strong>'+cautelaresNoTitulo(p)+'</div><p>'+esc(p.referencia||p.natureza||'Sem referência')+'</p><small>Conclusão: '+esc(p.dataFinalizacao?fmt(p.dataFinalizacao):'Não informada')+' · '+esc(descricaoResultadoProcedimento(p))+'</small></div><div class="procedure-actions"><button class="btn secondary" data-procedure-view="'+esc(p.id)+'">Ver / editar</button><button class="btn outline" data-procedure-reopen="'+esc(p.id)+'">Reabrir</button></div></article>').join(''):'<p class="empty">Nenhum procedimento nesta categoria.</p>')+'</div>').join('');
         target.querySelectorAll('[data-procedure-view]').forEach(b=>b.onclick=()=>openStatusIp(b.dataset.procedureView));
         target.querySelectorAll('[data-procedure-reopen]').forEach(b=>b.onclick=()=>reabrirProcedimento(b.dataset.procedureReopen));
       };
@@ -529,7 +547,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
         const d=x.data?x.data.split('-').reverse().join('/'):'';
         const last=x.updatedAt?new Date(x.updatedAt):null;
         const lastLabel=last&&!Number.isNaN(last.getTime())?last.toLocaleDateString('pt-BR')+' às '+last.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'—';
-        return '<article class="card" style="cursor:pointer" data-status-open="'+esc(x.id)+'" tabindex="0" role="button" aria-label="Abrir '+esc(x.tipoProcedimento||'IP')+' '+esc(x.ip)+'"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><strong style="font-size:17px">'+esc(x.tipoProcedimento||'IP')+' '+esc(x.ip)+'</strong>'+(x.referencia?'<div style="margin-top:7px;color:var(--muted)">'+esc(x.referencia)+'</div>':'')+(x.vitimas?'<div class="ip-people"><strong>Vítima(s):</strong> '+esc(x.vitimas)+'</div>':'')+(x.investigados?'<div class="ip-people"><strong>Suspeito(s)/investigado(s):</strong> '+esc(x.investigados)+'</div>':'')+(x.prejuizoTotal?'<div class="ip-people"><strong>Prejuízo total (R$):</strong> '+esc(x.prejuizoTotal)+'</div>':'')+(x.numeroCooperacao?'<div class="ip-people"><strong>Nº da cooperação:</strong> '+esc(x.numeroCooperacao)+'</div>':'')+(x.cautelarNumero||x.cautelarDescricao?'<div style="margin-top:8px;font-size:13px"><strong>⚖ Cautelar '+esc(x.cautelarNumero||'sem número')+'</strong>'+(x.cautelarDescricao?' — '+esc(x.cautelarDescricao):'')+'<div style="margin-top:4px;color:var(--muted)">Situação: '+esc(x.cautelarStatus||'Não informada')+(x.cautelarStatus==='Respondido'?' · '+esc(x.cautelarDecisao||'Sem decisão')+(x.cautelarDecisao==='Indeferido'?' · Reanálise: '+esc(x.cautelarReanalise||'Não informado'):''):'')+(x.cautelarBuscaRealizada?' · Busca realizada: '+esc(x.cautelarBuscaRealizada)+(x.cautelarBuscaRealizada==='Sim'?' · Sucesso: '+esc(x.cautelarBuscaSucesso||'Não informado'):''):'')+'</div></div>':'')+(x.driveUrl?'<div style="margin-top:8px">'+driveButton(x.driveUrl)+'</div>':'')+(d?'<div style="margin-top:5px;color:var(--muted);font-size:12px">Data: '+esc(d)+'</div>':'')+'<div style="margin-top:6px;color:var(--muted);font-size:12px">Última movimentação: '+esc(lastLabel)+'</div>'+(tasks.length?'<div style="margin-top:7px;font-size:12px;color:var(--muted)">'+done+' de '+tasks.length+' providências concluídas</div>':'')+'</div><span style="color:var(--muted)">Ver detalhes ›</span></div><div class="procedure-actions"><button type="button" class="btn secondary" data-procedure-finish="'+esc(x.id)+'">Relatar ou arquivar</button></div></article>';
+        return '<article class="card" style="cursor:pointer" data-status-open="'+esc(x.id)+'" tabindex="0" role="button" aria-label="Abrir '+esc(x.tipoProcedimento||'IP')+' '+esc(x.ip)+'"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><div class="procedure-heading"><strong style="font-size:17px">'+esc(x.tipoProcedimento||'IP')+' '+esc(x.ip)+'</strong>'+cautelaresNoTitulo(x)+'</div>'+(x.referencia?'<div style="margin-top:7px;color:var(--muted)">'+esc(x.referencia)+'</div>':'')+(x.vitimas?'<div class="ip-people"><strong>Vítima(s):</strong> '+esc(x.vitimas)+'</div>':'')+(x.investigados?'<div class="ip-people"><strong>Suspeito(s)/investigado(s):</strong> '+esc(x.investigados)+'</div>':'')+(x.prejuizoTotal?'<div class="ip-people"><strong>Prejuízo total (R$):</strong> '+esc(x.prejuizoTotal)+'</div>':'')+(x.numeroCooperacao?'<div class="ip-people"><strong>Nº da cooperação:</strong> '+esc(x.numeroCooperacao)+'</div>':'')+(x.cautelarNumero||x.cautelarDescricao?'<div style="margin-top:8px;font-size:13px"><strong>⚖ Cautelar '+esc(x.cautelarNumero||'sem número')+'</strong>'+(x.cautelarDescricao?' — '+esc(x.cautelarDescricao):'')+'<div style="margin-top:4px;color:var(--muted)">Situação: '+esc(x.cautelarStatus||'Não informada')+(x.cautelarStatus==='Respondido'?' · '+esc(x.cautelarDecisao||'Sem decisão')+(x.cautelarDecisao==='Indeferido'?' · Reanálise: '+esc(x.cautelarReanalise||'Não informado'):''):'')+(x.cautelarBuscaRealizada?' · Busca realizada: '+esc(x.cautelarBuscaRealizada)+(x.cautelarBuscaRealizada==='Sim'?' · Sucesso: '+esc(x.cautelarBuscaSucesso||'Não informado'):''):'')+'</div></div>':'')+(x.driveUrl?'<div style="margin-top:8px">'+driveButton(x.driveUrl)+'</div>':'')+(d?'<div style="margin-top:5px;color:var(--muted);font-size:12px">Data: '+esc(d)+'</div>':'')+'<div style="margin-top:6px;color:var(--muted);font-size:12px">Última movimentação: '+esc(lastLabel)+'</div>'+(tasks.length?'<div style="margin-top:7px;font-size:12px;color:var(--muted)">'+done+' de '+tasks.length+' providências concluídas</div>':'')+'</div><span style="color:var(--muted)">Ver detalhes ›</span></div><div class="procedure-actions"><button type="button" class="btn secondary" data-procedure-finish="'+esc(x.id)+'">Relatar ou arquivar</button></div></article>';
       }).join(''):'<div class="empty">Nenhum procedimento cadastrado nesta aba.</div>';
       target.querySelectorAll('[data-procedure-finish]').forEach(b=>b.onclick=e=>{e.stopPropagation();abrirConclusaoProcedimento(b.dataset.procedureFinish)});target.querySelectorAll('.reference-link').forEach(a=>a.onclick=e=>e.stopPropagation()); target.querySelectorAll('[data-status-open]').forEach(el=>{const open=()=>openStatusIp(el.dataset.statusOpen);el.onclick=open;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}}});
     }
