@@ -961,8 +961,9 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     const FUNDO_LEAVES=FUNDO_ITEMS.filter(k=>!Object.prototype.hasOwnProperty.call(FUNDO_GROUPS,k));
     function fundoGroupState(entry,key){
       const children=FUNDO_GROUPS[key]||[];
-      const completed=children.filter(k=>Boolean(entry.checks?.[k])).length;
-      return {completed,total:children.length,pending:children.length-completed,done:completed===children.length};
+      const items=[key,...children];
+      const completed=items.filter(k=>Boolean(entry.checks?.[k])).length;
+      return {completed,total:items.length,pending:items.length-completed,done:completed===items.length};
     }
     function fundoCheckHTML(item,key){
       return '<label class="fundo-check"><input type="checkbox" data-fundo-check="'+key+'" data-fundo-id="'+esc(item.id)+'" '+(item.checks?.[key]?'checked':'')+'><span>'+FUNDO_LABELS[key]+'</span></label>';
@@ -972,7 +973,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       const label=state.done?'✓ Concluído':state.pending+' '+(state.pending===1?'pendência':'pendências');
       return '<div class="fundo-check-branch">'+
         '<div class="fundo-branch-heading">'+
-          '<label class="fundo-check fundo-check-parent"><input type="checkbox" data-fundo-check="'+key+'" data-fundo-id="'+esc(entry.id)+'" '+(state.done?'checked':'')+'><span>'+FUNDO_LABELS[key]+'</span></label>'+
+          '<label class="fundo-check fundo-check-parent"><input type="checkbox" data-fundo-check="'+key+'" data-fundo-id="'+esc(entry.id)+'" '+(entry.checks?.[key]?'checked':'')+'><span>'+FUNDO_LABELS[key]+'</span></label>'+
           '<button type="button" class="fundo-expand" data-fundo-expand="'+key+'" data-fundo-id="'+esc(entry.id)+'" aria-expanded="'+expanded+'" aria-label="'+(expanded?'Recolher ':'Expandir ')+FUNDO_LABELS[key]+'"><span class="fundo-branch-state">'+label+'</span><span aria-hidden="true">'+(expanded?'▴':'▾')+'</span></button>'+
         '</div>'+
         (expanded?'<div class="fundo-subitems">'+FUNDO_GROUPS[key].map(k=>fundoCheckHTML(entry,k)).join('')+'</div>':'')+
@@ -987,8 +988,8 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       document.querySelectorAll('[data-fundo-tab]').forEach(b=>{const active=b.dataset.fundoTab===fundoTab;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});
       const shown=entries.filter(e=>e.tipo===fundoTab);
       cards.innerHTML=shown.length?shown.map(e=>{
-        const done=FUNDO_LEAVES.filter(k=>e.checks?.[k]).length;
-        return '<article class="card fundo-entry"><div class="fundo-entry-head"><div><h3>'+esc(e.empresa)+'</h3><div class="fundo-meta">CNPJ: '+esc(e.cnpj)+'</div><div class="fundo-meta">'+(e.tipo==='servico'?'Nota de serviço':'Nota de consumo')+'</div></div><strong>'+fundoMoney(e.valorCentavos)+'</strong></div><div class="fundo-meta">Checklist: '+done+' de '+FUNDO_LEAVES.length+' concluídos · '+(FUNDO_LEAVES.length-done)+' pendentes</div><div class="fundo-checks">'+fundoGroupHTML(e,'nf')+fundoCheckHTML(e,'pagamento')+fundoCheckHTML(e,'indisponibilidade')+fundoGroupHTML(e,'orcamentos')+['federal','estadual','municipal','fgts','trabalhista','justificativa'].map(k=>fundoCheckHTML(e,k)).join('')+'</div><div class="fundo-actions"><button type="button" class="btn secondary" data-fundo-edit="'+esc(e.id)+'">Editar nota</button><button type="button" class="btn outline" data-fundo-remove="'+esc(e.id)+'">Excluir nota</button></div></article>';
+        const done=FUNDO_ITEMS.filter(k=>e.checks?.[k]).length;
+        return '<article class="card fundo-entry"><div class="fundo-entry-head"><div><h3>'+esc(e.empresa)+'</h3><div class="fundo-meta">CNPJ: '+esc(e.cnpj)+'</div><div class="fundo-meta">'+(e.tipo==='servico'?'Nota de serviço':'Nota de consumo')+'</div></div><strong>'+fundoMoney(e.valorCentavos)+'</strong></div><div class="fundo-meta">Checklist: '+done+' de '+FUNDO_ITEMS.length+' concluídos · '+(FUNDO_ITEMS.length-done)+' pendentes</div><div class="fundo-checks">'+fundoGroupHTML(e,'nf')+fundoCheckHTML(e,'pagamento')+fundoCheckHTML(e,'indisponibilidade')+fundoGroupHTML(e,'orcamentos')+['federal','estadual','municipal','fgts','trabalhista','justificativa'].map(k=>fundoCheckHTML(e,k)).join('')+'</div><div class="fundo-actions"><button type="button" class="btn secondary" data-fundo-edit="'+esc(e.id)+'">Editar nota</button><button type="button" class="btn outline" data-fundo-remove="'+esc(e.id)+'">Excluir nota</button></div></article>';
       }).join(''):'<div class="empty">Nenhuma nota de '+(fundoTab==='servico'?'serviço':'consumo')+' cadastrada.</div>';
       cards.querySelectorAll('[data-fundo-expand]').forEach(b=>b.onclick=()=>{
         const key=b.dataset.fundoId+':'+b.dataset.fundoExpand;
@@ -999,10 +1000,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
         const entry=fundoRecords().find(e=>e.id===input.dataset.fundoId);if(!entry)return;
         if(!entry.checks)entry.checks={};
         const key=input.dataset.fundoCheck;
-        if(Object.prototype.hasOwnProperty.call(FUNDO_GROUPS,key)){
-          FUNDO_GROUPS[key].forEach(k=>{entry.checks[k]=input.checked});
-        }else entry.checks[key]=input.checked;
-        ['nf','orcamentos'].forEach(group=>{entry.checks[group]=fundoGroupState(entry,group).done});
+        entry.checks[key]=input.checked;
         save();
       });
       cards.querySelectorAll('[data-fundo-edit]').forEach(b=>b.onclick=()=>editFundo(b.dataset.fundoEdit));
