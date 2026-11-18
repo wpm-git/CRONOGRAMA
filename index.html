@@ -226,6 +226,10 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     #fundo .fundo-iss-necessary select{max-width:78px;border:1px solid var(--line);border-radius:5px;padding:3px 4px;background:var(--card);color:var(--text);font:inherit;font-size:12px}
     #fundo .fundo-iss-check input:disabled{opacity:.45;cursor:not-allowed}
 #fundo .fundo-parent-label{cursor:default;font-weight:700;align-self:center}
+    #fundo .fundo-company-line{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+    #fundo .fundo-company-line h3{margin:0}
+    #fundo .fundo-launched{display:inline-flex;align-items:center;gap:5px;color:#47d18a;font-weight:750;font-size:12px;line-height:1.35}
+    #fundo .fundo-launched span{display:inline-grid;place-items:center;border-radius:50%;background:#17804e;color:white;font-size:11px;width:17px;height:17px}
 </style>
 </head>
 <body>
@@ -954,8 +958,8 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       });
     }
 
-    const FUNDO_ITEMS=['nf','atesto','apj','pagamento','indisponibilidade','orcamentos','orcamento1','orcamento2','orcamento3','federal','estadual','municipal','fgts','trabalhista','justificativa'];
-    const FUNDO_LABELS={nf:'NF',atesto:'Atesto',apj:'APJ',pagamento:'Pagamento',indisponibilidade:'Certidão de Indisponibilidade',orcamentos:'Orçamentos',orcamento1:'1º Orçamento',orcamento2:'2º Orçamento',orcamento3:'3º Orçamento',federal:'Certidão federal',estadual:'Certidão estadual',municipal:'Certidão municipal',fgts:'Certidão FGTS',trabalhista:'Certidão trabalhista',justificativa:'Justificativa',iss:'ISS'};
+    const FUNDO_ITEMS=['nf','lancar_nf','atesto','apj','pagamento','indisponibilidade','orcamentos','orcamento1','orcamento2','orcamento3','federal','estadual','municipal','fgts','trabalhista','justificativa'];
+    const FUNDO_LABELS={nf:'NF',lancar_nf:'Lançar NF',atesto:'Atesto',apj:'APJ',pagamento:'Pagamento',indisponibilidade:'Certidão de Indisponibilidade',orcamentos:'Orçamentos',orcamento1:'1º Orçamento',orcamento2:'2º Orçamento',orcamento3:'3º Orçamento',federal:'Certidão federal',estadual:'Certidão estadual',municipal:'Certidão municipal',fgts:'Certidão FGTS',trabalhista:'Certidão trabalhista',justificativa:'Justificativa',iss:'ISS'};
     let fundoTab='servico';
     const fundoExpanded=new Set();
     const fundoNotasAbertas=new Set();
@@ -1003,7 +1007,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       const shown=entries.filter(e=>e.tipo===fundoTab).reverse();
       cards.innerHTML=shown.length?shown.map(e=>{
         const required=fundoRequiredItems(e.tipo,e),done=required.filter(k=>e.checks?.[k]).length,aberta=fundoNotasAbertas.has(e.id);
-        return '<article class="card fundo-entry"><div class="fundo-entry-head"><div><h3>'+esc(e.empresa)+'</h3><div class="fundo-meta">CNPJ: '+esc(e.cnpj)+'</div><div class="fundo-meta">'+(e.tipo==='servico'?'Nota de serviço':'Nota de consumo')+'</div></div><strong>'+fundoMoney(e.valorCentavos)+'</strong></div><button type="button" class="fundo-toggle-nota" data-fundo-toggle="'+esc(e.id)+'" aria-expanded="'+aberta+'">Checklist: '+done+' de '+required.length+' concluídos · '+(required.length-done)+' pendentes <span aria-hidden="true">'+(aberta?'▴':'▾')+'</span></button>'+(aberta?'<div class="fundo-checks">'+fundoGroupHTML(e,'nf')+fundoCheckHTML(e,'pagamento')+fundoCheckHTML(e,'indisponibilidade')+fundoGroupHTML(e,'orcamentos')+['federal','estadual','municipal','fgts','trabalhista','justificativa',...(e.tipo==='servico'?['iss']:[])].map(k=>fundoCheckHTML(e,k)).join('')+'</div><div class="fundo-actions"><button type="button" class="btn secondary" data-fundo-edit="'+esc(e.id)+'">Editar nota</button><button type="button" class="btn outline" data-fundo-remove="'+esc(e.id)+'">Excluir nota</button></div>':'')+'</article>';
+        return '<article class="card fundo-entry"><div class="fundo-entry-head"><div><div class="fundo-company-line"><h3>'+esc(e.empresa)+'</h3>'+(e.checks?.lancar_nf?'<span class="fundo-launched" aria-label="Nota fiscal lançada"><span aria-hidden="true">✓</span> Lançado</span>':'')+'</div><div class="fundo-meta">CNPJ: '+esc(e.cnpj)+'</div><div class="fundo-meta">'+(e.tipo==='servico'?'Nota de serviço':'Nota de consumo')+'</div></div><strong>'+fundoMoney(e.valorCentavos)+'</strong></div><button type="button" class="fundo-toggle-nota" data-fundo-toggle="'+esc(e.id)+'" aria-expanded="'+aberta+'">Checklist: '+done+' de '+required.length+' concluídos · '+(required.length-done)+' pendentes <span aria-hidden="true">'+(aberta?'▴':'▾')+'</span></button>'+(aberta?'<div class="fundo-checks">'+fundoGroupHTML(e,'nf')+fundoCheckHTML(e,'lancar_nf')+fundoCheckHTML(e,'pagamento')+fundoCheckHTML(e,'indisponibilidade')+fundoGroupHTML(e,'orcamentos')+['federal','estadual','municipal','fgts','trabalhista','justificativa',...(e.tipo==='servico'?['iss']:[])].map(k=>fundoCheckHTML(e,k)).join('')+'</div><div class="fundo-actions"><button type="button" class="btn secondary" data-fundo-edit="'+esc(e.id)+'">Editar nota</button><button type="button" class="btn outline" data-fundo-remove="'+esc(e.id)+'">Excluir nota</button></div>':'')+'</article>';
       }).join(''):'<div class="empty">Nenhuma nota de '+(fundoTab==='servico'?'serviço':'consumo')+' cadastrada.</div>';
       cards.querySelectorAll('[data-fundo-toggle]').forEach(b=>b.onclick=()=>{const id=b.dataset.fundoToggle;if(fundoNotasAbertas.has(id))fundoNotasAbertas.delete(id);else fundoNotasAbertas.add(id);renderFundo()});
       cards.querySelectorAll('[data-fundo-expand]').forEach(b=>b.onclick=()=>{
