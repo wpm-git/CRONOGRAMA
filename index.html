@@ -944,7 +944,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     }
 
     const FUNDO_ITEMS=['nf','atesto','apj','pagamento','indisponibilidade','orcamentos','orcamento1','orcamento2','orcamento3','federal','estadual','municipal','fgts','trabalhista','justificativa'];
-    const FUNDO_LABELS={nf:'NF',atesto:'Atesto',apj:'APJ',pagamento:'Pagamento',indisponibilidade:'Certidão de Indisponibilidade',orcamentos:'Orçamentos',orcamento1:'1º Orçamento',orcamento2:'2º Orçamento',orcamento3:'3º Orçamento',federal:'Certidão federal',estadual:'Certidão estadual',municipal:'Certidão municipal',fgts:'Certidão FGTS',trabalhista:'Certidão trabalhista',justificativa:'Justificativa'};
+    const FUNDO_LABELS={nf:'NF',atesto:'Atesto',apj:'APJ',pagamento:'Pagamento',indisponibilidade:'Certidão de Indisponibilidade',orcamentos:'Orçamentos',orcamento1:'1º Orçamento',orcamento2:'2º Orçamento',orcamento3:'3º Orçamento',federal:'Certidão federal',estadual:'Certidão estadual',municipal:'Certidão municipal',fgts:'Certidão FGTS',trabalhista:'Certidão trabalhista',justificativa:'Justificativa',iss:'ISS'};
     let fundoTab='servico';
     const fundoExpanded=new Set();
     function fundoRecords(){return Array.isArray(settings.fundoRotativo)?settings.fundoRotativo:[]}
@@ -959,6 +959,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     }
     const FUNDO_GROUPS={nf:['atesto','apj'],orcamentos:['orcamento1','orcamento2','orcamento3']};
     const FUNDO_LEAVES=FUNDO_ITEMS.filter(k=>!Object.prototype.hasOwnProperty.call(FUNDO_GROUPS,k));
+    function fundoRequiredItems(tipo){return tipo==='servico'?[...FUNDO_ITEMS,'iss']:FUNDO_ITEMS}
     function fundoGroupState(entry,key){
       const children=FUNDO_GROUPS[key]||[];
       const items=[key,...children];
@@ -988,8 +989,8 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       document.querySelectorAll('[data-fundo-tab]').forEach(b=>{const active=b.dataset.fundoTab===fundoTab;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});
       const shown=entries.filter(e=>e.tipo===fundoTab);
       cards.innerHTML=shown.length?shown.map(e=>{
-        const done=FUNDO_ITEMS.filter(k=>e.checks?.[k]).length;
-        return '<article class="card fundo-entry"><div class="fundo-entry-head"><div><h3>'+esc(e.empresa)+'</h3><div class="fundo-meta">CNPJ: '+esc(e.cnpj)+'</div><div class="fundo-meta">'+(e.tipo==='servico'?'Nota de serviço':'Nota de consumo')+'</div></div><strong>'+fundoMoney(e.valorCentavos)+'</strong></div><div class="fundo-meta">Checklist: '+done+' de '+FUNDO_ITEMS.length+' concluídos · '+(FUNDO_ITEMS.length-done)+' pendentes</div><div class="fundo-checks">'+fundoGroupHTML(e,'nf')+fundoCheckHTML(e,'pagamento')+fundoCheckHTML(e,'indisponibilidade')+fundoGroupHTML(e,'orcamentos')+['federal','estadual','municipal','fgts','trabalhista','justificativa'].map(k=>fundoCheckHTML(e,k)).join('')+'</div><div class="fundo-actions"><button type="button" class="btn secondary" data-fundo-edit="'+esc(e.id)+'">Editar nota</button><button type="button" class="btn outline" data-fundo-remove="'+esc(e.id)+'">Excluir nota</button></div></article>';
+        const required=fundoRequiredItems(e.tipo),done=required.filter(k=>e.checks?.[k]).length;
+        return '<article class="card fundo-entry"><div class="fundo-entry-head"><div><h3>'+esc(e.empresa)+'</h3><div class="fundo-meta">CNPJ: '+esc(e.cnpj)+'</div><div class="fundo-meta">'+(e.tipo==='servico'?'Nota de serviço':'Nota de consumo')+'</div></div><strong>'+fundoMoney(e.valorCentavos)+'</strong></div><div class="fundo-meta">Checklist: '+done+' de '+required.length+' concluídos · '+(required.length-done)+' pendentes</div><div class="fundo-checks">'+fundoGroupHTML(e,'nf')+fundoCheckHTML(e,'pagamento')+fundoCheckHTML(e,'indisponibilidade')+fundoGroupHTML(e,'orcamentos')+['federal','estadual','municipal','fgts','trabalhista','justificativa',...(e.tipo==='servico'?['iss']:[])].map(k=>fundoCheckHTML(e,k)).join('')+'</div><div class="fundo-actions"><button type="button" class="btn secondary" data-fundo-edit="'+esc(e.id)+'">Editar nota</button><button type="button" class="btn outline" data-fundo-remove="'+esc(e.id)+'">Excluir nota</button></div></article>';
       }).join(''):'<div class="empty">Nenhuma nota de '+(fundoTab==='servico'?'serviço':'consumo')+' cadastrada.</div>';
       cards.querySelectorAll('[data-fundo-expand]').forEach(b=>b.onclick=()=>{
         const key=b.dataset.fundoId+':'+b.dataset.fundoExpand;
