@@ -196,6 +196,25 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     .fundo-subitems{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 0 18px}
     .fundo-subitems .fundo-check{background:var(--card)}
     @media(max-width:600px){.fundo-subitems{grid-template-columns:1fr}.fundo-expand{min-width:120px}}
+
+    /* Fundo Rotativo: checklist compacto, uniforme, três colunas proporcionais */
+    #fundo .fundo-entry .fundo-checks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px;align-items:stretch}
+    #fundo .fundo-entry .fundo-check,
+    #fundo .fundo-entry .fundo-check-branch,
+    #fundo .fundo-entry .fundo-expand{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:8px;box-shadow:none!important}
+    #fundo .fundo-entry .fundo-check{padding:7px 9px;min-height:39px;font-size:12px;line-height:1.25;min-width:0}
+    #fundo .fundo-entry .fundo-check span{overflow-wrap:anywhere}
+    #fundo .fundo-entry .fundo-check input{width:15px;height:15px}
+    #fundo .fundo-entry .fundo-check-branch{grid-column:auto;min-width:0;padding:5px 6px;align-self:stretch}
+    #fundo .fundo-entry .fundo-branch-heading{gap:4px;align-items:center}
+    #fundo .fundo-entry .fundo-check-parent{padding:5px;min-height:33px;flex:1}
+    #fundo .fundo-entry .fundo-expand{min-width:0;max-width:55%;padding:5px 7px;font-size:11px;gap:5px;color:var(--muted)}
+    #fundo .fundo-entry .fundo-branch-state{white-space:normal;text-align:right;line-height:1.2}
+    #fundo .fundo-entry .fundo-subitems{display:grid;grid-template-columns:1fr;gap:5px;margin:5px 0 0}
+    #fundo .fundo-entry .fundo-subitems .fundo-check{padding:6px 8px;min-height:34px}
+    #fundo .fundo-entry{padding:14px}
+    @media(max-width:850px){#fundo .fundo-entry .fundo-checks{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:540px){#fundo .fundo-entry .fundo-checks{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
