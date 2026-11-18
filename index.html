@@ -230,6 +230,8 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     #fundo .fundo-company-line h3{margin:0}
     #fundo .fundo-launched{display:inline-flex;align-items:center;gap:5px;color:#47d18a;font-weight:750;font-size:12px;line-height:1.35}
     #fundo .fundo-launched span{display:inline-grid;place-items:center;border-radius:50%;background:#17804e;color:white;font-size:11px;width:17px;height:17px}
+    #fundo .fundo-header-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+    #fundo .fundo-header-actions .btn{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -255,7 +257,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     <section id="arquivados" class="page"><div class="page-title"><h2>🗂 Arquivados</h2></div><p class="procedure-help">Procedimentos arquivados, separados entre IP, BOU e BOA.</p><div id="arquivadosSummary" class="stats"></div><div id="arquivadosCards" class="cards"></div></section>
     
     <section id="fundo" class="page">
-      <div class="page-title"><h2>💼 Fundo Rotativo</h2><button class="btn primary" id="fundoAdd">+ Adicionar nota</button></div>
+      <div class="page-title"><h2>💼 Fundo Rotativo</h2><div class="fundo-header-actions"><button class="btn primary" id="fundoAdd">+ Adicionar nota</button><button class="btn danger" id="fundoDeleteAll">Excluir tudo</button></div></div>
       <p class="fundo-description">Controle de notas fiscais, documentos e valores. Marque os itens do checklist conforme forem providenciados.</p>
       <div id="fundoTotals" class="fundo-totals"></div>
       <div class="fundo-tabs" role="group" aria-label="Tipo de nota">
@@ -1047,6 +1049,29 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
         fundoTab=tipo;save();closeModal();toast('Nota do Fundo Rotativo salva.');
       };
     }
+    function excluirTudoFundo(){
+      const notes=fundoRecords();
+      if(!notes.length){toast('Não há notas no Fundo Rotativo para excluir.');return}
+      const qtd=notes.length;
+      modal('Excluir todas as notas do Fundo Rotativo',
+        '<p>Esta ação retirará <strong>'+qtd+' nota(s)</strong> de Serviço e Consumo, zerando os totais e os checklists do Fundo Rotativo.</p>'+
+        '<p>As notas serão enviadas à <strong>Lixeira</strong>, onde poderão ser recuperadas por até 30 dias. Os demais dados do Cronograma não serão afetados.</p>'+
+        '<div class="field"><label>Para confirmar, digite EXCLUIR</label><input id="fundoDeleteAllConfirmText" autocomplete="off" maxlength="7" placeholder="EXCLUIR"></div>',
+        '<button type="button" class="btn secondary" id="fundoDeleteAllCancel">Cancelar</button>'+
+        '<button type="button" class="btn danger" id="fundoDeleteAllConfirm" disabled>Excluir '+qtd+' nota(s)</button>');
+      $('#fundoDeleteAllCancel').onclick=closeModal;
+      $('#fundoDeleteAllConfirmText').oninput=()=>{
+        $('#fundoDeleteAllConfirm').disabled=$('#fundoDeleteAllConfirmText').value.trim().toUpperCase()!=='EXCLUIR';
+      };
+      $('#fundoDeleteAllConfirm').onclick=()=>{
+        if($('#fundoDeleteAllConfirmText').value.trim().toUpperCase()!=='EXCLUIR')return;
+        const current=fundoRecords();
+        current.forEach(note=>archiveItem('fundo',note));
+        settings.fundoRotativo=[];
+        fundoExpanded.clear();fundoNotasAbertas.clear();
+        save();closeModal();toast(current.length+' nota(s) enviada(s) à Lixeira.');
+      };
+    }
     function removeFundo(id){
       const entry=fundoRecords().find(e=>e.id===id);if(!entry)return;
       modal('Excluir nota','<p>Excluir a nota da empresa <strong>'+esc(entry.empresa)+'</strong>? Ela poderá ser recuperada pela Lixeira.</p>',
@@ -1066,7 +1091,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     $('#filterStatusIp').addEventListener('change',renderStatusIps);
     $('#globalQuery').oninput=updateGlobal;$('#globalType').onchange=updateGlobal;
     $('#reportMonth').value=todayISO().slice(0,7);$('#reportMonth').onchange=updateReport;$('#printReport').onclick=()=>window.print();
-    $('#fundoAdd').onclick=()=>editFundo();document.querySelectorAll('[data-fundo-tab]').forEach(b=>b.onclick=()=>{fundoTab=b.dataset.fundoTab;renderFundo()});
+    $('#fundoAdd').onclick=()=>editFundo();$('#fundoDeleteAll').onclick=excluirTudoFundo;document.querySelectorAll('[data-fundo-tab]').forEach(b=>b.onclick=()=>{fundoTab=b.dataset.fundoTab;renderFundo()});
     $('#addOficio').onclick=()=>formOficio(null);
     $('#searchOficios').addEventListener('input',renderOficios);
     $('#filterOficios').addEventListener('change',renderOficios);
