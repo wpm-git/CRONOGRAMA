@@ -167,12 +167,33 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
 .cautelar-inline-item{display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:5px;max-width:100%;font-size:12px;line-height:1.5}
 .cautelar-inline-number{font-weight:700;color:var(--gold);overflow-wrap:anywhere}
 .cautelar-inline-description{font-size:11px;color:var(--muted);font-weight:400;overflow-wrap:anywhere}
+
+    .fundo-description{color:var(--muted);margin-bottom:17px}
+    .fundo-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-bottom:18px}
+    .fundo-total{background:var(--card);border:1px solid var(--line);padding:17px;border-radius:13px;box-shadow:var(--shadow)}
+    .fundo-total span{display:block;font-size:12px;color:var(--muted)}
+    .fundo-total strong{display:block;margin-top:7px;font-size:24px;color:var(--gold);overflow-wrap:anywhere}
+    .fundo-tabs{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:17px}
+    .fundo-tabs .active{background:var(--gold)!important;color:#25262a!important;border:1px solid var(--gold)!important}
+    .fundo-entry{padding:18px;overflow-wrap:anywhere}
+    .fundo-entry-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+    .fundo-entry h3{margin:0 0 5px;font-size:17px}
+    .fundo-meta{font-size:12px;color:var(--muted);margin:3px 0}
+    .fundo-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px}
+    .fundo-check{display:flex;gap:8px;align-items:center;font-size:13px;padding:10px;background:var(--bg);border:1px solid var(--line);border-radius:9px;cursor:pointer}
+    .fundo-check input{accent-color:var(--green);width:17px;height:17px;flex:none}
+    .fundo-check-branch{grid-column:1/-1;border:1px solid var(--line);border-radius:10px;padding:10px}
+    .fundo-check-branch summary{cursor:pointer;font-weight:700;color:var(--gold);list-style:auto}
+    .fundo-check-branch .fundo-checks{padding:5px 0 0 12px;margin-top:6px}
+    .fundo-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+    .fundo-done{font-size:12px;color:var(--muted)}
+    @media(max-width:600px){.fundo-totals,.fundo-checks{grid-template-columns:1fr}.fundo-check-branch .fundo-checks{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
   <header>
     <div class="top"><div class="brand"><div class="brand-mark"><img src="./cronograma-192.png?v=13" alt="Cronograma" width="62" height="62"></div><div><h1>Cronogramas</h1><p id="welcomeLine">Controle de anotações, movimentações e prazos</p></div></div><div class="header-actions"><button id="installTop" class="hidden">Instalar aplicativo</button><div class="clock-panel"><div id="clockGreeting" class="clock-greeting">Bom dia!</div><div class="clock-info"><div class="clock-unit"><small>DATA</small><strong id="clockDate">--/--/----</strong></div><div class="clock-divider"></div><div class="clock-unit clock-time-unit"><small>HORÁRIO</small><strong id="clockTime">--:--:--</strong></div></div><div class="clock-context"><span class="context-icon">⌖</span><span id="clockWeekday" class="clock-weekday">—</span><span class="context-dot">•</span><span id="clockLocation" class="clock-location">Identificando cidade…</span></div></div></div></div>
-    <nav><button data-page="home" class="active"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9h-6v-6h-4v6H4Z"/></svg><span>Início</span></button><button data-page="notes"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4"/></svg><span>Anotações</span></button><button data-page="ips"><svg viewBox="0 0 24 24"><path d="M4 6h16v14H4zM8 3v6M16 3v6M8 13h8M8 17h5"/></svg><span>Anotações com IP</span></button><button data-page="statusips"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h8M8 17h5"/></svg><span>STATUS</span></button><button data-page="relatados"><span>📑 Relatados</span></button><button data-page="arquivados"><span>🗂 Arquivados</span></button><button data-page="oficios"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4"/></svg><span>OFÍCIOS</span></button><button data-page="busca"><span>🔎 Busca</span></button><button data-page="relatorios"><span>📊 Relatório</span></button><button data-page="lixeira"><span>🗑 Lixeira</span></button><button data-page="calendar"><svg viewBox="0 0 24 24"><path d="M4 6h16v14H4zM8 3v6M16 3v6M4 10h16M8 14h2M12 14h2M16 14h2M8 17h2M12 17h2"/></svg><span>Calendário</span></button><button data-page="finished"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg><span>Finalizados</span></button><button data-page="settings"><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0-5v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>Configurações</span></button></nav>
+    <nav><button data-page="home" class="active"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9h-6v-6h-4v6H4Z"/></svg><span>Início</span></button><button data-page="notes"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4"/></svg><span>Anotações</span></button><button data-page="ips"><svg viewBox="0 0 24 24"><path d="M4 6h16v14H4zM8 3v6M16 3v6M8 13h8M8 17h5"/></svg><span>Anotações com IP</span></button><button data-page="statusips"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h8M8 17h5"/></svg><span>STATUS</span></button><button data-page="relatados"><span>📑 Relatados</span></button><button data-page="arquivados"><span>🗂 Arquivados</span></button><button data-page="fundo"><span>💼 Fundo Rotativo</span></button><button data-page="oficios"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4"/></svg><span>OFÍCIOS</span></button><button data-page="busca"><span>🔎 Busca</span></button><button data-page="relatorios"><span>📊 Relatório</span></button><button data-page="lixeira"><span>🗑 Lixeira</span></button><button data-page="calendar"><svg viewBox="0 0 24 24"><path d="M4 6h16v14H4zM8 3v6M16 3v6M4 10h16M8 14h2M12 14h2M16 14h2M8 17h2M12 17h2"/></svg><span>Calendário</span></button><button data-page="finished"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg><span>Finalizados</span></button><button data-page="settings"><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0-5v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>Configurações</span></button></nav>
   </header>
   <main>
     <section id="home" class="page active">
@@ -190,7 +211,18 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     </section>
     <section id="relatados" class="page"><div class="page-title"><h2>📑 Relatados</h2></div><p class="procedure-help">Inquéritos policiais relatados, separados pelo resultado.</p><div id="relatadosSummary" class="stats"></div><div id="relatadosCards" class="cards"></div></section>
     <section id="arquivados" class="page"><div class="page-title"><h2>🗂 Arquivados</h2></div><p class="procedure-help">Procedimentos arquivados, separados entre IP, BOU e BOA.</p><div id="arquivadosSummary" class="stats"></div><div id="arquivadosCards" class="cards"></div></section>
-    <section id="oficios" class="page">
+    
+    <section id="fundo" class="page">
+      <div class="page-title"><h2>💼 Fundo Rotativo</h2><button class="btn primary" id="fundoAdd">+ Adicionar nota</button></div>
+      <p class="fundo-description">Controle de notas fiscais, documentos e valores. Marque os itens do checklist conforme forem providenciados.</p>
+      <div id="fundoTotals" class="fundo-totals"></div>
+      <div class="fundo-tabs" role="group" aria-label="Tipo de nota">
+        <button type="button" class="btn secondary" data-fundo-tab="servico">Notas de serviço</button>
+        <button type="button" class="btn secondary" data-fundo-tab="consumo">Notas de consumo</button>
+      </div>
+      <div id="fundoCards" class="cards"></div>
+    </section>
+<section id="oficios" class="page">
       <div class="page-title"><h2>📄 Controle de ofícios</h2><button class="btn primary" id="addOficio">+ Novo ofício</button></div>
       <div class="stats oficio-stats">
         <div class="stat"><span>Total de ofícios</span><strong id="ofTotal">0</strong></div>
@@ -869,7 +901,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       const cutoff=Date.now()-30*86400000;
       settings.trash=(Array.isArray(settings.trash)?settings.trash:[]).filter(x=>x&&Date.parse(x.deletedAt)>=cutoff);
       el.innerHTML=settings.trash.length?settings.trash.slice().reverse().map(t=>{
-        const name=t.kind==='oficio'?t.item.nome:t.kind==='status'?'IP '+t.item.ip:t.item.type==='ip'?'IP '+t.item.ip:t.item.description;
+        const name=t.kind==='oficio'?t.item.nome:t.kind==='status'?'IP '+t.item.ip:t.kind==='fundo'?'Nota — '+t.item.empresa:t.item.type==='ip'?'IP '+t.item.ip:t.item.description;
         return '<article class="card" style="margin:10px 0;padding:15px"><h3>'+esc(name||'Registro')+'</h3><p>Excluído em '+esc(new Date(t.deletedAt).toLocaleString('pt-BR'))+'</p><button class="btn secondary" data-untrash="'+esc(t.id)+'">↻ Recuperar</button></article>';
       }).join(''):'<div class="empty">Nenhum item na lixeira.</div>';
       el.querySelectorAll('[data-untrash]').forEach(b=>b.onclick=()=>{
@@ -878,17 +910,89 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
         if(x.kind==='registro'){if(records.some(r=>r.id===item.id))item.id=uid();records.push(item)}
         if(x.kind==='oficio'){if(oficios.some(o=>o.id===item.id))item.id=uid();oficios.push(item);localStorage.setItem(OFICIOS_KEY,JSON.stringify(oficios))}
         if(x.kind==='status'){if(getStatusIps().some(t=>t.id===item.id))item.id=uid();settings.statusIps=[...getStatusIps(),item]}
+        if(x.kind==='fundo'){if(fundoRecords().some(t=>t.id===item.id))item.id=uid();settings.fundoRotativo=[...fundoRecords(),item]}
         settings.trash=settings.trash.filter(t=>t.id!==x.id);
         save();toast('Registro recuperado da lixeira.');
       });
     }
-    function render(){renderStatusIps();renderConcludedProcedures();updateTrash();updatePriority();updateReport();updateGlobal();const open=records.filter(r=>!r.finished),fin=records.filter(r=>r.finished),late=open.filter(r=>diff(r.due)<0),today=open.filter(r=>diff(r.due)===0),tom=open.filter(r=>diff(r.due)===1);$('#welcomeLine').textContent=settings.name?`Olá, ${settings.name} — controle de anotações, movimentações e prazos`:'Controle de anotações, movimentações e prazos';$('#userName').value=settings.name||'';$('#recordCount').textContent=`${records.length} ${records.length===1?'registro armazenado':'registros armazenados'}`;$('#stOpen').textContent=open.length;$('#stLate').textContent=late.length;$('#stToday').textContent=today.length;$('#stTomorrow').textContent=tom.length;$('#stFinished').textContent=fin.length;const alert=[...late,...today,...tom].sort((a,b)=>a.due.localeCompare(b.due));$('#alerts').innerHTML=alert.length?`<div class="alert-panel"><div class="alert-title">❗ Atenção aos prazos</div>${alert.map(r=>`<div class="alert-item"><strong>${r.type==='ip'?'Tarefa IP':'Tarefa'}:</strong> ${esc(r.type==='ip'?r.ip:r.description)} — ${deadline(r.due).text}</div>`).join('')}</div>`:'';const near=[...open].sort((a,b)=>a.due.localeCompare(b.due)).slice(0,5);$('#homeCards').innerHTML=near.length?near.map(r=>card(r)).join(''):empty('Nenhuma tarefa aberta.');const qn=$('#searchNotes').value.toLowerCase(),fn=$('#filterNotes').value,notes=open.filter(r=>r.type==='note'&&hay(r).includes(qn)&&matchesFilter(r,fn)).sort((a,b)=>a.due.localeCompare(b.due));$('#notesCards').innerHTML=notes.length?notes.map(r=>card(r)).join(''):empty('Nenhuma anotação encontrada.');const qi=$('#searchIps').value.toLowerCase(),fi=$('#filterIps').value,sit=$('#situationFilter').value.toLowerCase(),ips=open.filter(r=>r.type==='ip'&&hay(r).includes(qi)&&r.situation.toLowerCase().includes(sit)&&matchesFilter(r,fi)).sort((a,b)=>a.due.localeCompare(b.due));$('#ipsCards').innerHTML=ips.length?ips.map(r=>card(r)).join(''):empty('Nenhuma anotação com IP encontrada.');const qf=$('#searchFinished').value.toLowerCase(),finals=fin.filter(r=>r.type===currentFinal&&hay(r).includes(qf)).sort((a,b)=>String(b.finishedAt).localeCompare(String(a.finishedAt)));$('#finishedCards').innerHTML=finals.length?finals.map(r=>card(r,true)).join(''):empty('Nenhuma tarefa finalizada nesta categoria.');bindCards();renderOficios()}
+
+    const FUNDO_ITEMS=['nf','atesto','apj','pagamento','indisponibilidade','orcamentos','orcamento1','orcamento2','orcamento3','federal','estadual','municipal','fgts','trabalhista','justificativa'];
+    const FUNDO_LABELS={nf:'NF',atesto:'Atesto',apj:'APJ',pagamento:'Pagamento',indisponibilidade:'Certidão de Indisponibilidade',orcamentos:'Orçamentos',orcamento1:'1º Orçamento',orcamento2:'2º Orçamento',orcamento3:'3º Orçamento',federal:'Certidão federal',estadual:'Certidão estadual',municipal:'Certidão municipal',fgts:'Certidão FGTS',trabalhista:'Certidão trabalhista',justificativa:'Justificativa'};
+    let fundoTab='servico';
+    function fundoRecords(){return Array.isArray(settings.fundoRotativo)?settings.fundoRotativo:[]}
+    function fundoMoney(cents){return (Number(cents||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+    function fundoCents(input){
+      let v=String(input||'').trim().replace(/^R\$\s*/i,'').replace(/\s/g,'');
+      if(!v)return null;
+      if(!/^[\d.,]+$/.test(v))return NaN;
+      if(v.includes(',')){v=v.replace(/\./g,'').replace(',','.')}
+      else if(v.includes('.')){const parts=v.split('.');v=parts.length>2||parts.length===2&&parts[1].length===3?parts.join(''):v}
+      const n=Number(v);return Number.isFinite(n)&&n>=0&&n<=100000000000?Math.round(n*100):NaN;
+    }
+    function fundoCheckHTML(item,key){
+      return '<label class="fundo-check"><input type="checkbox" data-fundo-check="'+key+'" data-fundo-id="'+esc(item.id)+'" '+(item.checks?.[key]?'checked':'')+'><span>'+FUNDO_LABELS[key]+'</span></label>';
+    }
+    function renderFundo(){
+      const totals=$('#fundoTotals'),cards=$('#fundoCards');if(!totals||!cards)return;
+      const entries=fundoRecords();
+      const sum=type=>entries.filter(e=>e.tipo===type).reduce((a,e)=>a+Number(e.valorCentavos||0),0);
+      const info=type=>entries.filter(e=>e.tipo===type).length;
+      totals.innerHTML=[['servico','Notas de serviço'],['consumo','Notas de consumo']].map(([tipo,title])=>'<div class="fundo-total"><span>'+title+' ('+info(tipo)+')</span><strong>'+fundoMoney(sum(tipo))+'</strong></div>').join('');
+      document.querySelectorAll('[data-fundo-tab]').forEach(b=>{const active=b.dataset.fundoTab===fundoTab;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});
+      const shown=entries.filter(e=>e.tipo===fundoTab);
+      cards.innerHTML=shown.length?shown.map(e=>{
+        const done=FUNDO_ITEMS.filter(k=>e.checks?.[k]).length;
+        const branch=(key,kids)=>'<details class="fundo-check-branch" '+(kids.some(k=>e.checks?.[k])?'open':'')+'><summary>'+FUNDO_LABELS[key]+' · '+(e.checks?.[key]?'✓ Concluído':'Pendente')+'</summary><div class="fundo-checks">'+fundoCheckHTML(e,key)+kids.map(k=>fundoCheckHTML(e,k)).join('')+'</div></details>';
+        return '<article class="card fundo-entry"><div class="fundo-entry-head"><div><h3>'+esc(e.empresa)+'</h3><div class="fundo-meta">CNPJ: '+esc(e.cnpj)+'</div><div class="fundo-meta">'+(e.tipo==='servico'?'Nota de serviço':'Nota de consumo')+'</div></div><strong>'+fundoMoney(e.valorCentavos)+'</strong></div><div class="fundo-meta">Checklist: '+done+' de '+FUNDO_ITEMS.length+' concluídos</div><div class="fundo-checks">'+branch('nf',['atesto','apj'])+fundoCheckHTML(e,'pagamento')+fundoCheckHTML(e,'indisponibilidade')+branch('orcamentos',['orcamento1','orcamento2','orcamento3'])+['federal','estadual','municipal','fgts','trabalhista','justificativa'].map(k=>fundoCheckHTML(e,k)).join('')+'</div><div class="fundo-actions"><button type="button" class="btn secondary" data-fundo-edit="'+esc(e.id)+'">Editar nota</button><button type="button" class="btn outline" data-fundo-remove="'+esc(e.id)+'">Excluir nota</button></div></article>';
+      }).join(''):'<div class="empty">Nenhuma nota de '+(fundoTab==='servico'?'serviço':'consumo')+' cadastrada.</div>';
+      cards.querySelectorAll('[data-fundo-check]').forEach(input=>input.onchange=()=>{
+        const entry=fundoRecords().find(e=>e.id===input.dataset.fundoId);if(!entry)return;
+        if(!entry.checks)entry.checks={};entry.checks[input.dataset.fundoCheck]=input.checked;
+        save(); 
+      });
+      cards.querySelectorAll('[data-fundo-edit]').forEach(b=>b.onclick=()=>editFundo(b.dataset.fundoEdit));
+      cards.querySelectorAll('[data-fundo-remove]').forEach(b=>b.onclick=()=>removeFundo(b.dataset.fundoRemove));
+    }
+    function editFundo(id=null){
+      const entry=id?fundoRecords().find(e=>e.id===id):null;
+      modal(entry?'Editar nota do Fundo Rotativo':'Adicionar nota ao Fundo Rotativo',
+        '<form id="fundoForm" class="form-grid">'+
+        '<div class="field full"><label>Nome da empresa</label><input name="empresa" required maxlength="220" value="'+esc(entry?.empresa||'')+'" placeholder="Empresa fornecedora"></div>'+
+        '<div class="field"><label>CNPJ</label><input name="cnpj" required inputmode="numeric" maxlength="18" value="'+esc(entry?.cnpj||'')+'" placeholder="00.000.000/0000-00"></div>'+
+        '<div class="field"><label>Tipo de nota</label><select name="tipo"><option value="servico" '+((entry?.tipo||fundoTab)==='servico'?'selected':'')+'>Serviço</option><option value="consumo" '+((entry?.tipo||fundoTab)==='consumo'?'selected':'')+'>Consumo</option></select></div>'+
+        '<div class="field full"><label>Valor da nota (R$)</label><input name="valor" inputmode="decimal" required value="'+esc(entry?((entry.valorCentavos||0)/100).toFixed(2).replace('.',','):'')+'" placeholder="Ex.: 1.250,50"></div></form>',
+        '<button class="btn secondary" id="fundoCancel">Cancelar</button><button class="btn primary" id="fundoSave">Salvar nota</button>');
+      $('#fundoCancel').onclick=closeModal;
+      $('#fundoSave').onclick=()=>{
+        const form=$('#fundoForm');if(!form.reportValidity())return;
+        const empresa=form.elements.empresa.value.trim(),cnpj=form.elements.cnpj.value.trim(),tipo=form.elements.tipo.value;
+        const digits=cnpj.replace(/\D/g,'');if(digits.length!==14){toast('O CNPJ deve conter 14 dígitos.');return}
+        const value=fundoCents(form.elements.valor.value);if(!Number.isSafeInteger(value)||value<0){toast('Informe um valor de nota válido.');return}
+        const all=fundoRecords();
+        if(entry){entry.empresa=empresa;entry.cnpj=cnpj;entry.tipo=tipo;entry.valorCentavos=value;entry.updatedAt=new Date().toISOString()}
+        else {all.push({id:uid(),empresa,cnpj,tipo,valorCentavos:value,checks:{},createdAt:new Date().toISOString()});settings.fundoRotativo=all}
+        fundoTab=tipo;save();closeModal();toast('Nota do Fundo Rotativo salva.');
+      };
+    }
+    function removeFundo(id){
+      const entry=fundoRecords().find(e=>e.id===id);if(!entry)return;
+      modal('Excluir nota','<p>Excluir a nota da empresa <strong>'+esc(entry.empresa)+'</strong>? Ela poderá ser recuperada pela Lixeira.</p>',
+        '<button class="btn secondary" id="fundoDeleteCancel">Cancelar</button><button class="btn danger" id="fundoDeleteConfirm">Mover para lixeira</button>');
+      $('#fundoDeleteCancel').onclick=closeModal;
+      $('#fundoDeleteConfirm').onclick=()=>{
+        archiveItem('fundo',entry);
+        settings.fundoRotativo=fundoRecords().filter(e=>e.id!==id);
+        save();closeModal();toast('Nota movida para a lixeira.');
+      };
+    }
+    function render(){renderFundo();renderStatusIps();renderConcludedProcedures();updateTrash();updatePriority();updateReport();updateGlobal();const open=records.filter(r=>!r.finished),fin=records.filter(r=>r.finished),late=open.filter(r=>diff(r.due)<0),today=open.filter(r=>diff(r.due)===0),tom=open.filter(r=>diff(r.due)===1);$('#welcomeLine').textContent=settings.name?`Olá, ${settings.name} — controle de anotações, movimentações e prazos`:'Controle de anotações, movimentações e prazos';$('#userName').value=settings.name||'';$('#recordCount').textContent=`${records.length} ${records.length===1?'registro armazenado':'registros armazenados'}`;$('#stOpen').textContent=open.length;$('#stLate').textContent=late.length;$('#stToday').textContent=today.length;$('#stTomorrow').textContent=tom.length;$('#stFinished').textContent=fin.length;const alert=[...late,...today,...tom].sort((a,b)=>a.due.localeCompare(b.due));$('#alerts').innerHTML=alert.length?`<div class="alert-panel"><div class="alert-title">❗ Atenção aos prazos</div>${alert.map(r=>`<div class="alert-item"><strong>${r.type==='ip'?'Tarefa IP':'Tarefa'}:</strong> ${esc(r.type==='ip'?r.ip:r.description)} — ${deadline(r.due).text}</div>`).join('')}</div>`:'';const near=[...open].sort((a,b)=>a.due.localeCompare(b.due)).slice(0,5);$('#homeCards').innerHTML=near.length?near.map(r=>card(r)).join(''):empty('Nenhuma tarefa aberta.');const qn=$('#searchNotes').value.toLowerCase(),fn=$('#filterNotes').value,notes=open.filter(r=>r.type==='note'&&hay(r).includes(qn)&&matchesFilter(r,fn)).sort((a,b)=>a.due.localeCompare(b.due));$('#notesCards').innerHTML=notes.length?notes.map(r=>card(r)).join(''):empty('Nenhuma anotação encontrada.');const qi=$('#searchIps').value.toLowerCase(),fi=$('#filterIps').value,sit=$('#situationFilter').value.toLowerCase(),ips=open.filter(r=>r.type==='ip'&&hay(r).includes(qi)&&r.situation.toLowerCase().includes(sit)&&matchesFilter(r,fi)).sort((a,b)=>a.due.localeCompare(b.due));$('#ipsCards').innerHTML=ips.length?ips.map(r=>card(r)).join(''):empty('Nenhuma anotação com IP encontrada.');const qf=$('#searchFinished').value.toLowerCase(),finals=fin.filter(r=>r.type===currentFinal&&hay(r).includes(qf)).sort((a,b)=>String(b.finishedAt).localeCompare(String(a.finishedAt)));$('#finishedCards').innerHTML=finals.length?finals.map(r=>card(r,true)).join(''):empty('Nenhuma tarefa finalizada nesta categoria.');bindCards();renderOficios()}
     $$('nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));$$('[data-add]').forEach(b=>b.onclick=()=>b.dataset.add?openForm(b.dataset.add):pickType());$$('[data-stat-filter]').forEach(b=>{b.onclick=()=>showStatFilter(b.dataset.statFilter);b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showStatFilter(b.dataset.statFilter)}}});$('#calendarPrev').onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()-1,1);renderCalendar()};$('#calendarNext').onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+1,1);renderCalendar()};$('#calendarToday').onclick=()=>{calendarCursor=new Date();renderCalendar()};['searchNotes','filterNotes','searchIps','filterIps','situationFilter','searchFinished'].forEach(id=>$('#'+id).addEventListener('input',render));$$('[data-final]').forEach(b=>b.onclick=()=>{currentFinal=b.dataset.final;$$('[data-final]').forEach(x=>{x.classList.toggle('active',x===b);x.classList.toggle('secondary',x!==b)});render()});document.addEventListener('click',e=>{if(!e.target.closest('.menu-wrap'))closeMenus()});
     $('#addStatusIp').onclick=()=>openStatusIp();
     $('#searchStatusIp').addEventListener('input',renderStatusIps);
     $('#filterStatusIp').addEventListener('change',renderStatusIps);
     $('#globalQuery').oninput=updateGlobal;$('#globalType').onchange=updateGlobal;
     $('#reportMonth').value=todayISO().slice(0,7);$('#reportMonth').onchange=updateReport;$('#printReport').onclick=()=>window.print();
+    $('#fundoAdd').onclick=()=>editFundo();document.querySelectorAll('[data-fundo-tab]').forEach(b=>b.onclick=()=>{fundoTab=b.dataset.fundoTab;renderFundo()});
     $('#addOficio').onclick=()=>formOficio(null);
     $('#searchOficios').addEventListener('input',renderOficios);
     $('#filterOficios').addEventListener('change',renderOficios);
