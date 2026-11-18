@@ -219,6 +219,12 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     #fundo .fundo-toggle-nota{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;text-align:left;font:inherit;font-size:12px;line-height:1.5;color:var(--muted);background:transparent;border:0;border-radius:7px;padding:7px 3px;margin-top:4px;cursor:pointer}
     #fundo .fundo-toggle-nota:hover,#fundo .fundo-toggle-nota:focus-visible{color:var(--gold);background:rgba(255,255,255,.035);outline-offset:2px}
     #fundo .fundo-toggle-nota span{font-size:16px;color:var(--gold);flex-shrink:0}
+
+    #fundo .fundo-iss-line{display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap;min-width:0}
+    #fundo .fundo-iss-check,#fundo .fundo-iss-necessary{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-size:12px;cursor:pointer}
+    #fundo .fundo-iss-check input{accent-color:var(--green)}
+    #fundo .fundo-iss-necessary select{max-width:78px;border:1px solid var(--line);border-radius:5px;padding:3px 4px;background:var(--card);color:var(--text);font:inherit;font-size:12px}
+    #fundo .fundo-iss-check input:disabled{opacity:.45;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -964,7 +970,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     }
     const FUNDO_GROUPS={nf:['atesto','apj'],orcamentos:['orcamento1','orcamento2','orcamento3']};
     const FUNDO_LEAVES=FUNDO_ITEMS.filter(k=>!Object.prototype.hasOwnProperty.call(FUNDO_GROUPS,k));
-    function fundoRequiredItems(tipo){return tipo==='servico'?[...FUNDO_ITEMS,'iss']:FUNDO_ITEMS}
+    function fundoRequiredItems(tipo,entry){return tipo==='servico'&&entry?.issNecessario!=='nao'?[...FUNDO_ITEMS,'iss']:FUNDO_ITEMS}
     function fundoGroupState(entry,key){
       const children=FUNDO_GROUPS[key]||[];
       const items=[key,...children];
@@ -972,6 +978,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       return {completed,total:items.length,pending:items.length-completed,done:completed===items.length};
     }
     function fundoCheckHTML(item,key){
+      if(key==='iss')return '<div class="fundo-check fundo-iss-line"><label class="fundo-iss-check"><input type="checkbox" data-fundo-check="iss" data-fundo-id="'+esc(item.id)+'" '+(item.checks?.iss?'checked':'')+' '+(item.issNecessario==='nao'?'disabled':'')+'><span>ISS</span></label><label class="fundo-iss-necessary">Necessário: <select data-fundo-iss-needed="'+esc(item.id)+'" aria-label="ISS necessário"><option value="sim" '+(item.issNecessario!=='nao'?'selected':'')+'>Sim</option><option value="nao" '+(item.issNecessario==='nao'?'selected':'')+'>Não</option></select></label></div>';
       return '<label class="fundo-check"><input type="checkbox" data-fundo-check="'+key+'" data-fundo-id="'+esc(item.id)+'" '+(item.checks?.[key]?'checked':'')+'><span>'+FUNDO_LABELS[key]+'</span></label>';
     }
     function fundoGroupHTML(entry,key){
@@ -994,7 +1001,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       document.querySelectorAll('[data-fundo-tab]').forEach(b=>{const active=b.dataset.fundoTab===fundoTab;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});
       const shown=entries.filter(e=>e.tipo===fundoTab).reverse();
       cards.innerHTML=shown.length?shown.map(e=>{
-        const required=fundoRequiredItems(e.tipo),done=required.filter(k=>e.checks?.[k]).length,aberta=fundoNotasAbertas.has(e.id);
+        const required=fundoRequiredItems(e.tipo,e),done=required.filter(k=>e.checks?.[k]).length,aberta=fundoNotasAbertas.has(e.id);
         return '<article class="card fundo-entry"><div class="fundo-entry-head"><div><h3>'+esc(e.empresa)+'</h3><div class="fundo-meta">CNPJ: '+esc(e.cnpj)+'</div><div class="fundo-meta">'+(e.tipo==='servico'?'Nota de serviço':'Nota de consumo')+'</div></div><strong>'+fundoMoney(e.valorCentavos)+'</strong></div><button type="button" class="fundo-toggle-nota" data-fundo-toggle="'+esc(e.id)+'" aria-expanded="'+aberta+'">Checklist: '+done+' de '+required.length+' concluídos · '+(required.length-done)+' pendentes <span aria-hidden="true">'+(aberta?'▴':'▾')+'</span></button>'+(aberta?'<div class="fundo-checks">'+fundoGroupHTML(e,'nf')+fundoCheckHTML(e,'pagamento')+fundoCheckHTML(e,'indisponibilidade')+fundoGroupHTML(e,'orcamentos')+['federal','estadual','municipal','fgts','trabalhista','justificativa',...(e.tipo==='servico'?['iss']:[])].map(k=>fundoCheckHTML(e,k)).join('')+'</div><div class="fundo-actions"><button type="button" class="btn secondary" data-fundo-edit="'+esc(e.id)+'">Editar nota</button><button type="button" class="btn outline" data-fundo-remove="'+esc(e.id)+'">Excluir nota</button></div>':'')+'</article>';
       }).join(''):'<div class="empty">Nenhuma nota de '+(fundoTab==='servico'?'serviço':'consumo')+' cadastrada.</div>';
       cards.querySelectorAll('[data-fundo-toggle]').forEach(b=>b.onclick=()=>{const id=b.dataset.fundoToggle;if(fundoNotasAbertas.has(id))fundoNotasAbertas.delete(id);else fundoNotasAbertas.add(id);renderFundo()});
@@ -1003,6 +1010,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
         if(fundoExpanded.has(key))fundoExpanded.delete(key);else fundoExpanded.add(key);
         renderFundo();
       });
+      cards.querySelectorAll('[data-fundo-iss-needed]').forEach(select=>select.onchange=()=>{const entry=fundoRecords().find(e=>e.id===select.dataset.fundoIssNeeded);if(!entry)return;entry.issNecessario=select.value;save()});
       cards.querySelectorAll('[data-fundo-check]').forEach(input=>input.onchange=()=>{
         const entry=fundoRecords().find(e=>e.id===input.dataset.fundoId);if(!entry)return;
         if(!entry.checks)entry.checks={};
