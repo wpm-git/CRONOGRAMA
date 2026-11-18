@@ -225,6 +225,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     #fundo .fundo-iss-check input{accent-color:var(--green)}
     #fundo .fundo-iss-necessary select{max-width:78px;border:1px solid var(--line);border-radius:5px;padding:3px 4px;background:var(--card);color:var(--text);font:inherit;font-size:12px}
     #fundo .fundo-iss-check input:disabled{opacity:.45;cursor:not-allowed}
+#fundo .fundo-parent-label{cursor:default;font-weight:700;align-self:center}
 </style>
 </head>
 <body>
@@ -970,10 +971,10 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     }
     const FUNDO_GROUPS={nf:['atesto','apj'],orcamentos:['orcamento1','orcamento2','orcamento3']};
     const FUNDO_LEAVES=FUNDO_ITEMS.filter(k=>!Object.prototype.hasOwnProperty.call(FUNDO_GROUPS,k));
-    function fundoRequiredItems(tipo,entry){return tipo==='servico'&&entry?.issNecessario!=='nao'?[...FUNDO_ITEMS,'iss']:FUNDO_ITEMS}
+    function fundoRequiredItems(tipo,entry){const base=FUNDO_ITEMS.filter(k=>k!=='orcamentos');return tipo==='servico'&&entry?.issNecessario!=='nao'?[...base,'iss']:base}
     function fundoGroupState(entry,key){
       const children=FUNDO_GROUPS[key]||[];
-      const items=[key,...children];
+      const items=key==='orcamentos'?children:[key,...children];
       const completed=items.filter(k=>Boolean(entry.checks?.[k])).length;
       return {completed,total:items.length,pending:items.length-completed,done:completed===items.length};
     }
@@ -986,7 +987,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       const label=state.done?'✓ Concluído':state.pending+' '+(state.pending===1?'pendência':'pendências');
       return '<div class="fundo-check-branch">'+
         '<div class="fundo-branch-heading">'+
-          '<label class="fundo-check fundo-check-parent"><input type="checkbox" data-fundo-check="'+key+'" data-fundo-id="'+esc(entry.id)+'" '+(entry.checks?.[key]?'checked':'')+'><span>'+FUNDO_LABELS[key]+'</span></label>'+
+          (key==='orcamentos'?'<span class="fundo-check fundo-check-parent fundo-parent-label">'+FUNDO_LABELS[key]+'</span>':'<label class="fundo-check fundo-check-parent"><input type="checkbox" data-fundo-check="'+key+'" data-fundo-id="'+esc(entry.id)+'" '+(entry.checks?.[key]?'checked':'')+'><span>'+FUNDO_LABELS[key]+'</span></label>')+
           '<button type="button" class="fundo-expand" data-fundo-expand="'+key+'" data-fundo-id="'+esc(entry.id)+'" aria-expanded="'+expanded+'" aria-label="'+(expanded?'Recolher ':'Expandir ')+FUNDO_LABELS[key]+'"><span class="fundo-branch-state">'+label+'</span><span aria-hidden="true">'+(expanded?'▴':'▾')+'</span></button>'+
         '</div>'+
         (expanded?'<div class="fundo-subitems">'+FUNDO_GROUPS[key].map(k=>fundoCheckHTML(entry,k)).join('')+'</div>':'')+
