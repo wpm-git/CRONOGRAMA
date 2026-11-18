@@ -919,6 +919,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     const FUNDO_ITEMS=['nf','atesto','apj','pagamento','indisponibilidade','orcamentos','orcamento1','orcamento2','orcamento3','federal','estadual','municipal','fgts','trabalhista','justificativa'];
     const FUNDO_LABELS={nf:'NF',atesto:'Atesto',apj:'APJ',pagamento:'Pagamento',indisponibilidade:'Certidão de Indisponibilidade',orcamentos:'Orçamentos',orcamento1:'1º Orçamento',orcamento2:'2º Orçamento',orcamento3:'3º Orçamento',federal:'Certidão federal',estadual:'Certidão estadual',municipal:'Certidão municipal',fgts:'Certidão FGTS',trabalhista:'Certidão trabalhista',justificativa:'Justificativa'};
     let fundoTab='servico';
+    const fundoExpanded=new Set();
     function fundoRecords(){return Array.isArray(settings.fundoRotativo)?settings.fundoRotativo:[]}
     function fundoMoney(cents){return (Number(cents||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
     function fundoCents(input){
@@ -942,9 +943,10 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       const shown=entries.filter(e=>e.tipo===fundoTab);
       cards.innerHTML=shown.length?shown.map(e=>{
         const done=FUNDO_ITEMS.filter(k=>e.checks?.[k]).length;
-        const branch=(key,kids)=>'<details class="fundo-check-branch" '+(kids.some(k=>e.checks?.[k])?'open':'')+'><summary>'+FUNDO_LABELS[key]+' · '+(e.checks?.[key]?'✓ Concluído':'Pendente')+'</summary><div class="fundo-checks">'+fundoCheckHTML(e,key)+kids.map(k=>fundoCheckHTML(e,k)).join('')+'</div></details>';
+        const branch=(key,kids)=>'<details class="fundo-check-branch" data-fundo-branch="'+key+'" data-fundo-id="'+esc(e.id)+'" '+(fundoExpanded.has(e.id+':'+key)?'open':'')+'><summary>'+FUNDO_LABELS[key]+' · '+(e.checks?.[key]?'✓ Concluído':'Pendente')+'</summary><div class="fundo-checks">'+fundoCheckHTML(e,key)+kids.map(k=>fundoCheckHTML(e,k)).join('')+'</div></details>';
         return '<article class="card fundo-entry"><div class="fundo-entry-head"><div><h3>'+esc(e.empresa)+'</h3><div class="fundo-meta">CNPJ: '+esc(e.cnpj)+'</div><div class="fundo-meta">'+(e.tipo==='servico'?'Nota de serviço':'Nota de consumo')+'</div></div><strong>'+fundoMoney(e.valorCentavos)+'</strong></div><div class="fundo-meta">Checklist: '+done+' de '+FUNDO_ITEMS.length+' concluídos</div><div class="fundo-checks">'+branch('nf',['atesto','apj'])+fundoCheckHTML(e,'pagamento')+fundoCheckHTML(e,'indisponibilidade')+branch('orcamentos',['orcamento1','orcamento2','orcamento3'])+['federal','estadual','municipal','fgts','trabalhista','justificativa'].map(k=>fundoCheckHTML(e,k)).join('')+'</div><div class="fundo-actions"><button type="button" class="btn secondary" data-fundo-edit="'+esc(e.id)+'">Editar nota</button><button type="button" class="btn outline" data-fundo-remove="'+esc(e.id)+'">Excluir nota</button></div></article>';
       }).join(''):'<div class="empty">Nenhuma nota de '+(fundoTab==='servico'?'serviço':'consumo')+' cadastrada.</div>';
+      cards.querySelectorAll('[data-fundo-branch]').forEach(d=>d.ontoggle=()=>{const key=d.dataset.fundoId+':'+d.dataset.fundoBranch;if(d.open)fundoExpanded.add(key);else fundoExpanded.delete(key)});
       cards.querySelectorAll('[data-fundo-check]').forEach(input=>input.onchange=()=>{
         const entry=fundoRecords().find(e=>e.id===input.dataset.fundoId);if(!entry)return;
         if(!entry.checks)entry.checks={};entry.checks[input.dataset.fundoCheck]=input.checked;
@@ -982,6 +984,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       $('#fundoDeleteConfirm').onclick=()=>{
         archiveItem('fundo',entry);
         settings.fundoRotativo=fundoRecords().filter(e=>e.id!==id);
+        ['nf','orcamentos'].forEach(key=>fundoExpanded.delete(id+':'+key));
         save();closeModal();toast('Nota movida para a lixeira.');
       };
     }
