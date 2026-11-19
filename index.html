@@ -256,6 +256,19 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     #tcip .boletim-providence-top,#boc .boletim-providence-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:12px}
     #tcip .boletim-providence-top>div,#boc .boletim-providence-top>div{display:grid;gap:4px}
     #tcip .boletim-providence-top span,#boc .boletim-providence-top span{font-size:12px;color:var(--muted)}
+    #fundo .fundo-balance{display:grid;gap:9px}
+    #fundo .fundo-balance-line{display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:12px;color:var(--muted)}
+    #fundo .fundo-balance-line strong{font-size:15px;color:var(--text)}
+    #fundo .fundo-balance-net{padding-top:10px;border-top:1px solid var(--line);font-weight:750;color:var(--text)}
+    #fundo .fundo-balance-net strong{font-size:20px}
+    #fundo .fundo-balance-net .fundo-negative{color:#ff9292}
+    #fundo .fundo-balance-net .fundo-positive{color:#64dba6}
+    #fundo .fundo-cotas-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:15px 0 10px}
+    #fundo .fundo-cotas-head h3{font-size:15px;margin:0}
+    #fundo .fundo-cotas-list{display:grid;gap:8px;margin-bottom:20px}
+    #fundo .fundo-cota-row{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--card)}
+    #fundo .fundo-cota-actions{display:flex;gap:7px}
+    #fundo .fundo-cota-actions .btn{font-size:12px;padding:7px 10px}
 </style>
 </head>
 <body>
@@ -298,9 +311,11 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     <section id="tcip" class="page"><div class="slim-tabs" role="group" aria-label="Situação dos procedimentos"><button type="button" data-slim-tab="statusips">IP <span class="slim-counter" data-procedure-count="statusips">0</span></button><button type="button" data-slim-tab="boaAnalise">Boletim em análise <span class="slim-counter" data-procedure-count="boaAnalise">0</span></button><button type="button" data-slim-tab="relatados">Relatados <span class="slim-counter" data-procedure-count="relatados">0</span></button><button type="button" data-slim-tab="arquivados">Arquivados <span class="slim-counter" data-procedure-count="arquivados">0</span></button><button type="button" data-slim-tab="boletinsSemana">Boletim da semana <span class="slim-counter" data-procedure-count="boletinsSemana">0</span></button><button type="button" data-slim-tab="tcip">TCIP <span class="slim-counter" data-procedure-count="tcip">0</span></button><button type="button" data-slim-tab="boc">BOC <span class="slim-counter" data-procedure-count="boc">0</span></button></div><div class="page-title"><h2>TCIP</h2></div><p class="procedure-help">TCIPs gerados a partir dos boletins da semana, em andamento e arquivados.</p><div id="tcipCards" class="cards"></div></section>
     <section id="boc" class="page"><div class="slim-tabs" role="group" aria-label="Situação dos procedimentos"><button type="button" data-slim-tab="statusips">IP <span class="slim-counter" data-procedure-count="statusips">0</span></button><button type="button" data-slim-tab="boaAnalise">Boletim em análise <span class="slim-counter" data-procedure-count="boaAnalise">0</span></button><button type="button" data-slim-tab="relatados">Relatados <span class="slim-counter" data-procedure-count="relatados">0</span></button><button type="button" data-slim-tab="arquivados">Arquivados <span class="slim-counter" data-procedure-count="arquivados">0</span></button><button type="button" data-slim-tab="boletinsSemana">Boletim da semana <span class="slim-counter" data-procedure-count="boletinsSemana">0</span></button><button type="button" data-slim-tab="tcip">TCIP <span class="slim-counter" data-procedure-count="tcip">0</span></button><button type="button" data-slim-tab="boc">BOC <span class="slim-counter" data-procedure-count="boc">0</span></button></div><div class="page-title"><h2>BOC</h2></div><p class="procedure-help">BOCs gerados a partir dos boletins da semana, em andamento e arquivados.</p><div id="bocCards" class="cards"></div></section>
     <section id="fundo" class="page">
-      <div class="page-title"><h2>💼 Fundo Rotativo</h2><div class="fundo-header-actions"><button class="btn primary" id="fundoAdd">+ Adicionar nota</button><button class="btn danger" id="fundoDeleteAll">Excluir tudo</button></div></div>
+      <div class="page-title"><h2>💼 Fundo Rotativo</h2><div class="fundo-header-actions"><button class="btn primary" id="fundoAdd">+ Adicionar nota</button><button class="btn secondary" id="fundoAddCota">+ Entrada de cota</button><button class="btn danger" id="fundoDeleteAll">Excluir tudo</button></div></div>
       <p class="fundo-description">Controle de notas fiscais, documentos e valores. Marque os itens do checklist conforme forem providenciados.</p>
       <div id="fundoTotals" class="fundo-totals"></div>
+      <div class="fundo-cotas-head"><h3>Histórico de entradas de cotas</h3><button type="button" class="btn secondary" id="fundoToggleCotas" aria-expanded="false">Ver entradas ▾</button></div>
+      <div id="fundoCotasHistory" hidden></div>
       <div class="fundo-tabs" role="group" aria-label="Tipo de nota">
         <button type="button" class="btn secondary" data-fundo-tab="servico">Notas de serviço</button>
         <button type="button" class="btn secondary" data-fundo-tab="consumo">Notas de consumo</button>
@@ -987,7 +1002,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       const cutoff=Date.now()-30*86400000;
       settings.trash=(Array.isArray(settings.trash)?settings.trash:[]).filter(x=>x&&Date.parse(x.deletedAt)>=cutoff);
       el.innerHTML=settings.trash.length?settings.trash.slice().reverse().map(t=>{
-        const name=t.kind==='oficio'?t.item.nome:t.kind==='status'?'IP '+t.item.ip:t.kind==='fundo'?'Nota — '+t.item.empresa:t.kind==='boletimSemana'?'Boletim — '+t.item.numero:t.item.type==='ip'?'IP '+t.item.ip:t.item.description;
+        const name=t.kind==='oficio'?t.item.nome:t.kind==='status'?'IP '+t.item.ip:t.kind==='fundo'?'Nota — '+t.item.empresa:t.kind==='fundoCota'?'Entrada de cota — '+(t.item.tipo==='servico'?'Serviço':'Consumo'):t.kind==='boletimSemana'?'Boletim — '+t.item.numero:t.item.type==='ip'?'IP '+t.item.ip:t.item.description;
         return '<article class="card" style="margin:10px 0;padding:15px"><h3>'+esc(name||'Registro')+'</h3><p>Excluído em '+esc(new Date(t.deletedAt).toLocaleString('pt-BR'))+'</p><button class="btn secondary" data-untrash="'+esc(t.id)+'">↻ Recuperar</button></article>';
       }).join(''):'<div class="empty">Nenhum item na lixeira.</div>';
       el.querySelectorAll('[data-untrash]').forEach(b=>b.onclick=()=>{
@@ -997,6 +1012,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
         if(x.kind==='oficio'){if(oficios.some(o=>o.id===item.id))item.id=uid();oficios.push(item);localStorage.setItem(OFICIOS_KEY,JSON.stringify(oficios))}
         if(x.kind==='status'){if(getStatusIps().some(t=>t.id===item.id))item.id=uid();settings.statusIps=[...getStatusIps(),item]}
         if(x.kind==='fundo'){if(fundoRecords().some(t=>t.id===item.id))item.id=uid();settings.fundoRotativo=[...fundoRecords(),item]}
+        if(x.kind==='fundoCota'){if(fundoCotasRecords().some(t=>t.id===item.id))item.id=uid();settings.fundoCotas=[...fundoCotasRecords(),item]}
         if(x.kind==='boletimSemana'){if(boletinsSemanaRecords().some(t=>t.id===item.id))item.id=uid();settings.boletinsSemana=[...boletinsSemanaRecords(),item]}
         settings.trash=settings.trash.filter(t=>t.id!==x.id);
         save();toast('Registro recuperado da lixeira.');
@@ -1009,6 +1025,8 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     const fundoExpanded=new Set();
     const fundoNotasAbertas=new Set();
     function fundoRecords(){return Array.isArray(settings.fundoRotativo)?settings.fundoRotativo:[]}
+    function fundoCotasRecords(){return Array.isArray(settings.fundoCotas)?settings.fundoCotas:[]}
+    let fundoCotasAbertas=false;
     function fundoMoney(cents){return (Number(cents||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
     function fundoCents(input){
       let v=String(input||'').trim().replace(/^R\$\s*/i,'').replace(/\s/g,'');
@@ -1196,12 +1214,64 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
         save();closeModal();toast('Boletim enviado à Lixeira.');
       };
     }
+
+    function renderFundoCotas(){
+      const el=$('#fundoCotasHistory'),button=$('#fundoToggleCotas');
+      if(!el||!button)return;
+      el.hidden=!fundoCotasAbertas;
+      button.textContent=fundoCotasAbertas?'Ocultar entradas ▴':'Ver entradas ▾';
+      button.setAttribute('aria-expanded',String(fundoCotasAbertas));
+      if(!fundoCotasAbertas)return;
+      const cotas=fundoCotasRecords().slice().sort((a,b)=>String(b.data||'').localeCompare(String(a.data||''))||String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+      el.innerHTML=cotas.length?'<div class="fundo-cotas-list">'+cotas.map(c=>'<article class="fundo-cota-row"><div><strong>'+(c.tipo==='servico'?'Cota Serviço':'Cota Consumo')+'</strong><div class="fundo-meta">Entrada em '+esc(c.data?fmt(c.data):'Data não informada')+'</div></div><strong>'+fundoMoney(c.valorCentavos)+'</strong><div class="fundo-cota-actions"><button type="button" class="btn secondary" data-cota-edit="'+esc(c.id)+'">Editar</button><button type="button" class="btn outline" data-cota-delete="'+esc(c.id)+'">Excluir</button></div></article>').join('')+'</div>':'<div class="empty">Nenhuma entrada de cota cadastrada.</div>';
+      el.querySelectorAll('[data-cota-edit]').forEach(btn=>btn.onclick=()=>editFundoCota(btn.dataset.cotaEdit));
+      el.querySelectorAll('[data-cota-delete]').forEach(btn=>btn.onclick=()=>removeFundoCota(btn.dataset.cotaDelete));
+    }
+    function editFundoCota(id=null){
+      const entry=id?fundoCotasRecords().find(c=>c.id===id):null;
+      modal(entry?'Editar entrada de cota':'Adicionar entrada de cota',
+        '<form class="form-grid" id="fundoCotaForm">'+
+        '<div class="field"><label>Tipo de cota</label><select name="tipo"><option value="servico" '+((entry?.tipo||fundoTab)==='servico'?'selected':'')+'>Cota Serviço</option><option value="consumo" '+((entry?.tipo||fundoTab)==='consumo'?'selected':'')+'>Cota Consumo</option></select></div>'+
+        '<div class="field"><label>Data da entrada</label><input type="date" name="data" required value="'+esc(entry?.data||todayISO())+'"></div>'+
+        '<div class="field full"><label>Valor recebido (R$)</label><input name="valor" inputmode="decimal" required placeholder="Ex.: 5.000,00" value="'+esc(entry?(Number(entry.valorCentavos||0)/100).toFixed(2).replace('.',','):'')+'"></div>'+
+        '</form>',
+        '<button type="button" class="btn secondary" id="fundoCotaCancel">Cancelar</button><button type="button" class="btn primary" id="fundoCotaSave">Salvar entrada</button>');
+      $('#fundoCotaCancel').onclick=closeModal;
+      $('#fundoCotaSave').onclick=()=>{
+        const form=$('#fundoCotaForm');if(!form.reportValidity())return;
+        const tipo=form.elements.tipo.value,data=form.elements.data.value,valorCentavos=fundoCents(form.elements.valor.value);
+        if(!['servico','consumo'].includes(tipo)||!data||!/^\d{4}-\d{2}-\d{2}$/.test(data)||!Number.isSafeInteger(valorCentavos)||valorCentavos<=0){toast('Informe data e valor da cota válido e maior que zero.');return}
+        if(entry){Object.assign(entry,{tipo,data,valorCentavos,updatedAt:new Date().toISOString()})}
+        else{settings.fundoCotas=[...fundoCotasRecords(),{id:uid(),tipo,data,valorCentavos,createdAt:new Date().toISOString()}]}
+        fundoCotasAbertas=true;
+        save();closeModal();toast('Entrada de cota salva.');
+      };
+    }
+    function removeFundoCota(id){
+      const entry=fundoCotasRecords().find(c=>c.id===id);if(!entry)return;
+      modal('Excluir entrada de cota','<p>Excluir entrada de <strong>'+fundoMoney(entry.valorCentavos)+'</strong> da '+(entry.tipo==='servico'?'Cota Serviço':'Cota Consumo')+'? O saldo será recalculado. A entrada poderá ser recuperada pela Lixeira.</p>',
+        '<button type="button" class="btn secondary" id="fundoCotaDeleteCancel">Cancelar</button><button type="button" class="btn danger" id="fundoCotaDeleteConfirm">Mover para Lixeira</button>');
+      $('#fundoCotaDeleteCancel').onclick=closeModal;
+      $('#fundoCotaDeleteConfirm').onclick=()=>{
+        archiveItem('fundoCota',entry);
+        settings.fundoCotas=fundoCotasRecords().filter(c=>c.id!==id);
+        save();closeModal();toast('Entrada de cota enviada à Lixeira.');
+      };
+    }
     function renderFundo(){
       const totals=$('#fundoTotals'),cards=$('#fundoCards');if(!totals||!cards)return;
-      const entries=fundoRecords();
+      const entries=fundoRecords(),cotas=fundoCotasRecords();
       const sum=type=>entries.filter(e=>e.tipo===type).reduce((a,e)=>a+Number(e.valorCentavos||0),0);
+      const received=type=>cotas.filter(e=>e.tipo===type).reduce((a,e)=>a+Number(e.valorCentavos||0),0);
       const info=type=>entries.filter(e=>e.tipo===type).length;
-      totals.innerHTML=[['servico','Notas de serviço'],['consumo','Notas de consumo']].map(([tipo,title])=>'<div class="fundo-total"><span>'+title+' ('+info(tipo)+')</span><strong>'+fundoMoney(sum(tipo))+'</strong></div>').join('');
+      totals.innerHTML=[['servico','Cota Serviço'],['consumo','Cota Consumo']].map(([tipo,title])=>{
+        const entrada=received(tipo),saida=sum(tipo),saldo=entrada-saida;
+        return '<div class="fundo-total fundo-balance"><span>'+title+'</span>'+
+          '<div class="fundo-balance-line"><span>Verbas recebidas</span><strong>'+fundoMoney(entrada)+'</strong></div>'+
+          '<div class="fundo-balance-line"><span>Notas cadastradas ('+info(tipo)+')</span><strong>'+fundoMoney(saida)+'</strong></div>'+
+          '<div class="fundo-balance-line fundo-balance-net"><span>Saldo disponível</span><strong class="'+(saldo<0?'fundo-negative':'fundo-positive')+'">'+fundoMoney(saldo)+'</strong></div></div>';
+      }).join('');
+      renderFundoCotas();
       document.querySelectorAll('[data-fundo-tab]').forEach(b=>{const active=b.dataset.fundoTab===fundoTab;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});
       const shown=entries.filter(e=>e.tipo===fundoTab).reverse();
       cards.innerHTML=shown.length?shown.map(e=>{
@@ -1288,7 +1358,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     $('#filterStatusIp').addEventListener('change',renderStatusIps);
     $('#globalQuery').oninput=updateGlobal;$('#globalType').onchange=updateGlobal;
     $('#reportMonth').value=todayISO().slice(0,7);$('#reportMonth').onchange=updateReport;$('#printReport').onclick=()=>window.print();
-    $('#fundoAdd').onclick=()=>editFundo();$('#fundoDeleteAll').onclick=excluirTudoFundo;document.querySelectorAll('[data-fundo-tab]').forEach(b=>b.onclick=()=>{fundoTab=b.dataset.fundoTab;renderFundo()});
+    $('#fundoAdd').onclick=()=>editFundo();$('#fundoAddCota').onclick=()=>editFundoCota();$('#fundoToggleCotas').onclick=()=>{fundoCotasAbertas=!fundoCotasAbertas;renderFundoCotas()};$('#fundoDeleteAll').onclick=excluirTudoFundo;document.querySelectorAll('[data-fundo-tab]').forEach(b=>b.onclick=()=>{fundoTab=b.dataset.fundoTab;renderFundo()});
     $('#addOficio').onclick=()=>formOficio(null);
     $('#searchOficios').addEventListener('input',renderOficios);
     $('#filterOficios').addEventListener('change',renderOficios);
