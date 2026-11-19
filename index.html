@@ -245,6 +245,14 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     #boletinsSemana .boletim-field p{margin:4px 0 0;white-space:normal}
     .slim-tabs .slim-counter{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 5px;margin-left:5px;border-radius:10px;border:1px solid var(--line);background:rgba(128,128,128,.11);color:var(--muted);font-size:11px;line-height:1;font-weight:650;font-variant-numeric:tabular-nums}
     .slim-tabs button.active .slim-counter{color:var(--gold)}
+
+    #boletinsSemana .boletim-providence{margin-top:16px;padding-top:13px;border-top:1px solid var(--line)}
+    #boletinsSemana .boletim-providence-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+    #boletinsSemana .boletim-providence-top>div{display:grid;gap:5px}
+    #boletinsSemana .boletim-providence-top strong{font-size:14px}
+    #boletinsSemana .boletim-providence-top span,#boletinsSemana .boletim-task-empty{font-size:12px;color:var(--muted)}
+    #boletinsSemana .status-providence-card{padding:13px;gap:9px;border-radius:11px}
+    #boletinsSemana .status-providence-text{font-size:13px}
 </style>
 </head>
 <body>
@@ -1023,22 +1031,40 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     }
 
     function boletinsSemanaRecords(){return Array.isArray(settings.boletinsSemana)?settings.boletinsSemana:[]}
+    function boletimProvidencias(item){return Array.isArray(item.providencias)?item.providencias:[]}
     function renderBoletinsSemana(){
       const el=$('#boletinsSemanaCards');if(!el)return;
       const items=boletinsSemanaRecords().slice().reverse();
-      el.innerHTML=items.length?items.map(item=>'<article class="card boletim-semana-card"><div class="boletim-semana-head"><h3>Boletim '+esc(item.numero)+'</h3><span class="fundo-meta">'+(item.createdAt?esc(new Date(item.createdAt).toLocaleDateString('pt-BR')):'')+'</span></div>'+
-      '<div class="boletim-field"><strong>Vítima:</strong> '+esc(item.vitima)+'</div>'+
-      (item.autor?'<div class="boletim-field"><strong>Autor:</strong> '+esc(item.autor)+'</div>':'')+
-      '<div class="boletim-field"><strong>Resumo da situação:</strong><p>'+esc(item.resumo).replace(/\n/g,'<br>')+'</p></div>'+
-      '<div class="fundo-actions"><button type="button" class="btn secondary" data-boletim-edit="'+esc(item.id)+'">Editar</button><button type="button" class="btn outline" data-boletim-delete="'+esc(item.id)+'">Excluir</button></div></article>').join(''):'<div class="empty">Nenhum boletim cadastrado. Clique em “Adicionar boletim” para começar.</div>';
+      el.innerHTML=items.length?items.map(item=>{
+        const tasks=boletimProvidencias(item),done=tasks.filter(p=>p.feito).length;
+        const data=item.data||String(item.createdAt||'').slice(0,10);
+        const dateLabel=/^\d{4}-\d{2}-\d{2}$/.test(data)?data.split('-').reverse().join('/'): '—';
+        return '<article class="card boletim-semana-card">'+
+        '<div class="boletim-semana-head"><h3>Boletim '+esc(item.numero)+'</h3><span class="fundo-meta">Data: '+esc(dateLabel)+'</span></div>'+
+        '<div class="boletim-field"><strong>Vítima:</strong> '+esc(item.vitima)+'</div>'+
+        (item.autor?'<div class="boletim-field"><strong>Autor:</strong> '+esc(item.autor)+'</div>':'')+
+        '<div class="boletim-field"><strong>Resumo da situação:</strong><p>'+esc(item.resumo).replace(/\n/g,'<br>')+'</p></div>'+
+        '<div class="boletim-providence"><div class="boletim-providence-top"><div><strong>Providências — marque o que foi realizado</strong><span>'+done+' de '+tasks.length+' realizadas</span></div><button type="button" class="btn secondary" data-boletim-add-task="'+esc(item.id)+'">+ Providência</button></div>'+
+        (tasks.length?'<div class="status-task-grid">'+tasks.map(task=>'<div class="status-providence-card '+(task.feito?'is-done':'')+'"><div class="status-providence-head"><span class="status-providence-pill">'+(task.feito?'Realizada':'Pendente')+'</span><button type="button" class="status-providence-remove" data-boletim-remove-task="'+esc(item.id)+'" data-task-id="'+esc(task.id)+'" aria-label="Excluir providência" title="Excluir providência">×</button></div><div class="status-providence-text '+(task.feito?'done-text':'')+'">'+esc(task.texto)+'</div><label class="status-providence-check"><input type="checkbox" data-boletim-check-task="'+esc(item.id)+'" data-task-id="'+esc(task.id)+'" '+(task.feito?'checked':'')+'> Realizada</label></div>').join('')+'</div>':'<div class="boletim-task-empty">Nenhuma providência adicionada.</div>')+
+        '</div><div class="fundo-actions"><button type="button" class="btn secondary" data-boletim-edit="'+esc(item.id)+'">Editar boletim</button><button type="button" class="btn outline" data-boletim-delete="'+esc(item.id)+'">Excluir boletim</button></div></article>';
+      }).join(''):'<div class="empty">Nenhum boletim cadastrado. Clique em “Adicionar boletim” para começar.</div>';
       el.querySelectorAll('[data-boletim-edit]').forEach(b=>b.onclick=()=>editBoletimSemana(b.dataset.boletimEdit));
       el.querySelectorAll('[data-boletim-delete]').forEach(b=>b.onclick=()=>deleteBoletimSemana(b.dataset.boletimDelete));
+      el.querySelectorAll('[data-boletim-add-task]').forEach(b=>b.onclick=()=>addBoletimProvidencia(b.dataset.boletimAddTask));
+      el.querySelectorAll('[data-boletim-check-task]').forEach(input=>input.onchange=()=>{
+        const item=boletinsSemanaRecords().find(b=>b.id===input.dataset.boletimCheckTask);
+        const task=boletimProvidencias(item||{}).find(p=>p.id===input.dataset.taskId);if(!task)return;
+        task.feito=input.checked;task.updatedAt=new Date().toISOString();save();
+      });
+      el.querySelectorAll('[data-boletim-remove-task]').forEach(b=>b.onclick=()=>removeBoletimProvidencia(b.dataset.boletimRemoveTask,b.dataset.taskId));
     }
     function editBoletimSemana(id=null){
       const entry=id?boletinsSemanaRecords().find(b=>b.id===id):null;
+      const oldDate=entry?.data||String(entry?.createdAt||'').slice(0,10)||todayISO();
       modal(entry?'Editar boletim da semana':'Adicionar boletim da semana',
         '<form id="boletimSemanaForm" class="form-grid">'+
-        '<div class="field full"><label>Número do boletim</label><input name="numero" required maxlength="90" value="'+esc(entry?.numero||'')+'" placeholder="Ex.: 123456/2026"></div>'+
+        '<div class="field"><label>Data do boletim</label><input name="data" type="date" required value="'+esc(oldDate)+'"></div>'+
+        '<div class="field"><label>Número do boletim</label><input name="numero" required maxlength="90" value="'+esc(entry?.numero||'')+'" placeholder="Ex.: 123456/2026"></div>'+
         '<div class="field full"><label>Vítima</label><input name="vitima" required maxlength="350" value="'+esc(entry?.vitima||'')+'"></div>'+
         '<div class="field full"><label>Autor (se houver)</label><input name="autor" maxlength="350" value="'+esc(entry?.autor||'')+'"></div>'+
         '<div class="field full"><label>Resumo da situação</label><textarea name="resumo" rows="5" required maxlength="12000">'+esc(entry?.resumo||'')+'</textarea></div>'+
@@ -1047,11 +1073,35 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
       $('#boletimSemanaCancel').onclick=closeModal;
       $('#boletimSemanaSave').onclick=()=>{
         const form=$('#boletimSemanaForm');if(!form.reportValidity())return;
-        const numero=form.elements.numero.value.trim(),vitima=form.elements.vitima.value.trim(),autor=form.elements.autor.value.trim(),resumo=form.elements.resumo.value.trim();
-        if(!numero||!vitima||!resumo){toast('Preencha número, vítima e resumo.');return}
-        if(entry){Object.assign(entry,{numero,vitima,autor,resumo,updatedAt:new Date().toISOString()})}
-        else{settings.boletinsSemana=[...boletinsSemanaRecords(),{id:uid(),numero,vitima,autor,resumo,createdAt:new Date().toISOString()}]}
+        const data=form.elements.data.value,numero=form.elements.numero.value.trim(),vitima=form.elements.vitima.value.trim(),autor=form.elements.autor.value.trim(),resumo=form.elements.resumo.value.trim();
+        if(!data||!numero||!vitima||!resumo){toast('Preencha data, número, vítima e resumo.');return}
+        if(entry){Object.assign(entry,{data,numero,vitima,autor,resumo,updatedAt:new Date().toISOString()})}
+        else{settings.boletinsSemana=[...boletinsSemanaRecords(),{id:uid(),data,numero,vitima,autor,resumo,providencias:[],createdAt:new Date().toISOString()}]}
         save();closeModal();toast('Boletim salvo.');
+      };
+    }
+    function addBoletimProvidencia(id){
+      const entry=boletinsSemanaRecords().find(b=>b.id===id);if(!entry)return;
+      modal('Adicionar providência','<div class="field"><label>Providência realizada ou a realizar</label><textarea id="boletimTaskText" rows="3" maxlength="2000" placeholder="Descreva a providência"></textarea></div>',
+      '<button type="button" class="btn secondary" id="boletimTaskCancel">Cancelar</button><button type="button" class="btn primary" id="boletimTaskSave">Adicionar</button>');
+      $('#boletimTaskCancel').onclick=closeModal;
+      $('#boletimTaskSave').onclick=()=>{
+        const texto=$('#boletimTaskText').value.trim();
+        if(!texto){toast('Descreva a providência.');return}
+        if(!Array.isArray(entry.providencias))entry.providencias=[];
+        entry.providencias.push({id:uid(),texto,feito:false,createdAt:new Date().toISOString()});
+        save();closeModal();toast('Providência adicionada.');
+      };
+    }
+    function removeBoletimProvidencia(id,taskId){
+      const entry=boletinsSemanaRecords().find(b=>b.id===id),task=boletimProvidencias(entry||{}).find(p=>p.id===taskId);
+      if(!task)return;
+      modal('Excluir providência','<p>Remover esta providência do boletim?</p><p>'+esc(task.texto)+'</p>',
+        '<button type="button" class="btn secondary" id="boletimTaskRemoveCancel">Cancelar</button><button type="button" class="btn danger" id="boletimTaskRemoveConfirm">Remover</button>');
+      $('#boletimTaskRemoveCancel').onclick=closeModal;
+      $('#boletimTaskRemoveConfirm').onclick=()=>{
+        entry.providencias=boletimProvidencias(entry).filter(p=>p.id!==taskId);
+        save();closeModal();toast('Providência removida.');
       };
     }
     function deleteBoletimSemana(id){
