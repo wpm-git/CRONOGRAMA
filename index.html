@@ -253,6 +253,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
     #boletinsSemana .boletim-providence-top span,#boletinsSemana .boletim-task-empty{font-size:12px;color:var(--muted)}
     #boletinsSemana .status-providence-card{padding:13px;gap:9px;border-radius:11px}
     #boletinsSemana .status-providence-text{font-size:13px}
+    #boletinsSemana .boletim-drive-link{margin-top:11px}
 </style>
 </head>
 <body>
@@ -1053,7 +1054,7 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
         '<div class="boletim-semana-head"><h3>Boletim '+esc(item.numero)+'</h3><span class="fundo-meta">Data: '+esc(dateLabel)+'</span></div>'+
         '<div class="boletim-field"><strong>Vítima:</strong> '+esc(item.vitima)+'</div>'+
         (item.autor?'<div class="boletim-field"><strong>Autor:</strong> '+esc(item.autor)+'</div>':'')+
-        '<div class="boletim-field"><strong>Resumo da situação:</strong><p>'+esc(item.resumo).replace(/\n/g,'<br>')+'</p></div>'+
+        '<div class="boletim-field"><strong>Resumo da situação:</strong><p>'+esc(item.resumo).replace(/\n/g,'<br>')+'</p></div>'+(item.driveUrl?'<div class="boletim-drive-link">'+driveButton(item.driveUrl)+'</div>':'')+
         '<div class="boletim-providence"><div class="boletim-providence-top"><div><strong>Providências — marque o que foi realizado</strong><span>'+done+' de '+tasks.length+' realizadas</span></div><button type="button" class="btn secondary" data-boletim-add-task="'+esc(item.id)+'">+ Providência</button></div>'+
         (tasks.length?'<div class="status-task-grid">'+tasks.map(task=>'<div class="status-providence-card '+(task.feito?'is-done':'')+'"><div class="status-providence-head"><span class="status-providence-pill">'+(task.feito?'Realizada':'Pendente')+'</span><button type="button" class="status-providence-remove" data-boletim-remove-task="'+esc(item.id)+'" data-task-id="'+esc(task.id)+'" aria-label="Excluir providência" title="Excluir providência">×</button></div><div class="status-providence-text '+(task.feito?'done-text':'')+'">'+esc(task.texto)+'</div><label class="status-providence-check"><input type="checkbox" data-boletim-check-task="'+esc(item.id)+'" data-task-id="'+esc(task.id)+'" '+(task.feito?'checked':'')+'> Realizada</label></div>').join('')+'</div>':'<div class="boletim-task-empty">Nenhuma providência adicionada.</div>')+
         '</div><div class="fundo-actions"><button type="button" class="btn secondary" data-boletim-edit="'+esc(item.id)+'">Editar boletim</button><button type="button" class="btn outline" data-boletim-delete="'+esc(item.id)+'">Excluir boletim</button></div></article>';
@@ -1077,16 +1078,17 @@ input::placeholder,textarea::placeholder{color:#d1c9bf!important;opacity:1}
         '<div class="field"><label>Número do boletim</label><input name="numero" required maxlength="90" value="'+esc(entry?.numero||'')+'" placeholder="Ex.: 123456/2026"></div>'+
         '<div class="field full"><label>Vítima</label><input name="vitima" required maxlength="350" value="'+esc(entry?.vitima||'')+'"></div>'+
         '<div class="field full"><label>Autor (se houver)</label><input name="autor" maxlength="350" value="'+esc(entry?.autor||'')+'"></div>'+
-        '<div class="field full"><label>Resumo da situação</label><textarea name="resumo" rows="5" required maxlength="12000">'+esc(entry?.resumo||'')+'</textarea></div>'+
+        '<div class="field full"><label>Resumo da situação</label><textarea name="resumo" rows="5" required maxlength="12000">'+esc(entry?.resumo||'')+'</textarea></div>'+'<div class="field full"><label>Link do Google Drive (opcional)</label><input name="driveUrl" type="url" maxlength="2000" value="'+esc(entry?.driveUrl||'')+'" placeholder="https://drive.google.com/drive/folders/..."></div>'+
         '</form>',
         '<button type="button" class="btn secondary" id="boletimSemanaCancel">Cancelar</button><button type="button" class="btn primary" id="boletimSemanaSave">Salvar boletim</button>');
       $('#boletimSemanaCancel').onclick=closeModal;
       $('#boletimSemanaSave').onclick=()=>{
         const form=$('#boletimSemanaForm');if(!form.reportValidity())return;
-        const data=form.elements.data.value,numero=form.elements.numero.value.trim(),vitima=form.elements.vitima.value.trim(),autor=form.elements.autor.value.trim(),resumo=form.elements.resumo.value.trim();
+        const data=form.elements.data.value,numero=form.elements.numero.value.trim(),vitima=form.elements.vitima.value.trim(),autor=form.elements.autor.value.trim(),resumo=form.elements.resumo.value.trim(),driveUrl=form.elements.driveUrl.value.trim();
         if(!data||!numero||!vitima||!resumo){toast('Preencha data, número, vítima e resumo.');return}
-        if(entry){Object.assign(entry,{data,numero,vitima,autor,resumo,updatedAt:new Date().toISOString()})}
-        else{settings.boletinsSemana=[...boletinsSemanaRecords(),{id:uid(),data,numero,vitima,autor,resumo,providencias:[],createdAt:new Date().toISOString()}]}
+        if(driveUrl&&!driveButton(driveUrl)){toast('Informe um link HTTPS válido do Google Drive.');return}
+        if(entry){Object.assign(entry,{data,numero,vitima,autor,resumo,driveUrl,updatedAt:new Date().toISOString()})}
+        else{settings.boletinsSemana=[...boletinsSemanaRecords(),{id:uid(),data,numero,vitima,autor,resumo,driveUrl,providencias:[],createdAt:new Date().toISOString()}]}
         save();closeModal();toast('Boletim salvo.');
       };
     }
